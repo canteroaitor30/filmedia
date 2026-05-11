@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      { hostname: "image.tmdb.org" },
+      { hostname: "s4.anilist.co" },
+      { hostname: "img.anili.st" },
+    ],
+  },
 };
 
 export default nextConfig;
