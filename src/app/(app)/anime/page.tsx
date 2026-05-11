@@ -1,0 +1,40 @@
+import { anilistAnime, ANIME_GENRES } from "@/lib/anilist/client";
+import { Carousel } from "@/components/media/Carousel";
+import type { UnifiedMedia } from "@/types/media";
+import type { AnilistMedia } from "@/lib/anilist/client";
+
+function toUnified(a: AnilistMedia): UnifiedMedia {
+  return {
+    id: a.id,
+    type: "anime",
+    title: a.title.english ?? a.title.romaji,
+    originalTitle: a.title.native,
+    overview: a.description,
+    posterUrl: a.coverImage.large,
+    backdropUrl: a.bannerImage,
+    year: a.startDate.year,
+    score: a.averageScore,
+    genres: a.genres,
+  };
+}
+
+export default async function AnimePage() {
+  const [topRated, ...genreResults] = await Promise.all([
+    anilistAnime.topRated(),
+    ...ANIME_GENRES.slice(0, 4).map((g) => anilistAnime.byGenre(g)),
+  ]);
+
+  return (
+    <div className="space-y-10">
+      <h1 className="text-2xl font-bold">Anime</h1>
+      <Carousel title="Mejor valorados" items={topRated.media.map(toUnified)} />
+      {ANIME_GENRES.slice(0, 4).map((genre, i) => (
+        <Carousel
+          key={genre}
+          title={genre}
+          items={(genreResults[i]?.media ?? []).map(toUnified)}
+        />
+      ))}
+    </div>
+  );
+}
