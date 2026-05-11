@@ -73,6 +73,8 @@ export const tmdbMovies = {
     tmdb<{ genres: { id: number; name: string }[] }>("/genre/movie/list"),
   similar: (id: number) =>
     tmdb<TmdbPage<TmdbMovie>>(`/movie/${id}/similar`),
+  recommendations: (id: number) =>
+    tmdb<TmdbPage<TmdbMovie>>(`/movie/${id}/recommendations`),
   credits: (id: number) =>
     tmdb<{ cast: { id: number; name: string; character: string; profile_path: string | null }[] }>(`/movie/${id}/credits`),
 };
@@ -96,6 +98,8 @@ export const tmdbSeries = {
     tmdb<{ genres: { id: number; name: string }[] }>("/genre/tv/list"),
   similar: (id: number) =>
     tmdb<TmdbPage<TmdbSeries>>(`/tv/${id}/similar`),
+  recommendations: (id: number) =>
+    tmdb<TmdbPage<TmdbSeries>>(`/tv/${id}/recommendations`),
   credits: (id: number) =>
     tmdb<{ cast: { id: number; name: string; character: string; profile_path: string | null }[] }>(`/tv/${id}/aggregate_credits`),
 };

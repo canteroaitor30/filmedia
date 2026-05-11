@@ -4,8 +4,14 @@ import { FollowButton } from "@/components/social/FollowButton";
 import { WatchlistTab } from "@/components/profile/WatchlistTab";
 import { EditProfileButton } from "@/components/profile/EditProfileButton";
 
-export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+export default async function ProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{ type?: string; status?: string; rating?: string; platform?: string }>;
+}) {
+  const [{ username }, filters] = await Promise.all([params, searchParams]);
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -66,7 +72,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
       {/* Watchlist */}
       {canSeeWatchlist
-        ? <WatchlistTab userId={profile.id} isOwn={isOwn} />
+        ? <WatchlistTab userId={profile.id} isOwn={isOwn} filters={filters} />
         : (
           <div className="text-center py-16 text-muted-foreground">
             <p className="text-4xl mb-3">🔒</p>
