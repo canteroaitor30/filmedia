@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { SearchBar } from "./SearchBar";
 
 const links = [
   { href: "/home", label: "Inicio" },
@@ -47,6 +48,7 @@ export function Navbar({ username }: { username: string }) {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <SearchBar />
           <Link href={`/u/${username}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             @{username}
           </Link>
