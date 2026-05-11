@@ -2,6 +2,7 @@ import { tmdbSeries, posterUrl, backdropUrl } from "@/lib/tmdb/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { WatchButton } from "@/components/media/WatchButton";
+import { ReviewSection } from "@/components/media/ReviewSection";
 
 export default async function SeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -63,6 +64,10 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <WatchButton mediaType="series" externalId={seriesId} title={series.name} />
           </div>
         </div>
+      </div>
+
+      <div className="px-6 mt-2">
+        <ReviewSection mediaType="series" externalId={seriesId} />
       </div>
 
       {credits.cast.length > 0 && (

@@ -8,6 +8,7 @@ import { SearchBar } from "./SearchBar";
 
 const links = [
   { href: "/home", label: "Inicio" },
+  { href: "/feed", label: "Actividad" },
   { href: "/movies", label: "Películas" },
   { href: "/series", label: "Series" },
   { href: "/anime", label: "Anime" },

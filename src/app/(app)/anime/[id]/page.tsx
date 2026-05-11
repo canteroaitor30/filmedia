@@ -2,6 +2,7 @@ import { anilistAnime } from "@/lib/anilist/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { WatchButton } from "@/components/media/WatchButton";
+import { ReviewSection } from "@/components/media/ReviewSection";
 
 export default async function AnimeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,6 +57,9 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
             <WatchButton mediaType="anime" externalId={animeId} title={anime.title.english ?? anime.title.romaji} />
           </div>
         </div>
+      </div>
+      <div className="px-6 mt-2">
+        <ReviewSection mediaType="anime" externalId={animeId} />
       </div>
     </div>
   );

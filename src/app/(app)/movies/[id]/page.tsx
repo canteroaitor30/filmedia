@@ -2,6 +2,7 @@ import { tmdbMovies, posterUrl, backdropUrl } from "@/lib/tmdb/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { WatchButton } from "@/components/media/WatchButton";
+import { ReviewSection } from "@/components/media/ReviewSection";
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -68,6 +69,10 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Cast */}
+      <div className="px-6 mt-2">
+        <ReviewSection mediaType="movie" externalId={movieId} />
+      </div>
+
       {credits.cast.length > 0 && (
         <div className="px-6 mt-10">
           <h2 className="text-base font-semibold mb-3">Reparto</h2>
