@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { FollowButton } from "@/components/social/FollowButton";
 import { WatchlistTab } from "@/components/profile/WatchlistTab";
+import { EditProfileButton } from "@/components/profile/EditProfileButton";
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -48,6 +49,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <span className="text-muted-foreground text-sm">@{profile.username}</span>
             {!isOwn && user && (
               <FollowButton targetId={profile.id} initialFollowing={(isFollowingRes.count ?? 0) > 0} />
+            )}
+            {isOwn && (
+              <EditProfileButton profile={{ display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url }} />
             )}
           </div>
           {profile.bio && <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>}
