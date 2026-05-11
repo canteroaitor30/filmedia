@@ -66,7 +66,15 @@ export default async function SearchPage({ searchParams }: Props) {
         <h1 className="text-xl font-semibold">
           Resultados para <span style={{ color: "var(--gold)" }}>"{q}"</span>
         </h1>
-        <span className="text-sm text-muted-foreground">{results.length} resultados</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{results.length} resultados</span>
+          <a
+            href="/home"
+            className="text-sm px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ✕ Cancelar
+          </a>
+        </div>
       </div>
 
       {/* Filtro tipo */}
