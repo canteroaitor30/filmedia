@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { WatchButton } from "@/components/media/WatchButton";
 import { ReviewSection } from "@/components/media/ReviewSection";
+import { AddToListButton } from "@/components/lists/AddToListButton";
 
 export default async function AnimeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,8 +54,9 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-2xl">{overview}</p>
           )}
 
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap gap-2">
             <WatchButton mediaType="anime" externalId={animeId} title={anime.title.english ?? anime.title.romaji} />
+            <AddToListButton mediaType="anime" externalId={animeId} />
           </div>
         </div>
       </div>
