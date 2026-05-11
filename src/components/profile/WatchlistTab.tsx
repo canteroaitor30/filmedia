@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
+import type { MediaType, MediaStatus, Platform } from "@/types/database";
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
@@ -21,10 +22,10 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
 
-  if (filters.type && filters.type !== "all") query = query.eq("media_type", filters.type);
-  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+  if (filters.type && filters.type !== "all") query = query.eq("media_type", filters.type as MediaType);
+  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status as MediaStatus);
   if (filters.rating && filters.rating !== "all") query = query.gte("rating", Number(filters.rating));
-  if (filters.platform && filters.platform !== "all") query = query.eq("platform", filters.platform);
+  if (filters.platform && filters.platform !== "all") query = query.eq("platform", filters.platform as Platform);
 
   const [{ data: items }, { data: allItems }] = await Promise.all([
     query.limit(200),

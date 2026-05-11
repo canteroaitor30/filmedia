@@ -2,8 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
+import type { MediaType, MediaStatus, Platform } from "@/types/database";
 import Link from "next/link";
 import Image from "next/image";
+
+type ActivityRow = {
+  user_id: string;
+  media_type: MediaType;
+  external_id: number;
+  status: MediaStatus;
+  rating: number | null;
+  platform: Platform | null;
+  updated_at: string;
+  profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
+};
 
 export default async function FeedPage() {
   const supabase = await createClient();
@@ -27,15 +39,17 @@ export default async function FeedPage() {
     );
   }
 
-  const { data: activity } = await supabase
+  const { data: activityRaw } = await supabase
     .from("user_media")
     .select("user_id, media_type, external_id, status, rating, platform, updated_at, profiles!user_id(username, display_name, avatar_url)")
     .in("user_id", followingIds)
     .order("updated_at", { ascending: false })
     .limit(40);
 
+  const activity = (activityRaw ?? []) as unknown as ActivityRow[];
+
   const enriched = await Promise.all(
-    (activity ?? []).map(async (item) => {
+    activity.map(async (item) => {
       try {
         let title = "", poster: string | null = null, href = "";
         if (item.media_type === "movie") {
@@ -59,7 +73,7 @@ export default async function FeedPage() {
     <div className="max-w-xl mx-auto space-y-4">
       <h1 className="text-xl font-bold mb-6">Actividad</h1>
       {valid.map((item, i) => {
-        const profile = item.profiles as { username: string; display_name: string | null; avatar_url: string | null };
+        const profile = item.profiles ?? { username: "usuario", display_name: null, avatar_url: null };
         const action = item.status === "watched"
           ? item.rating ? `valoró con ${item.rating}★` : "marcó como visto"
           : "añadió a pendientes";

@@ -2,6 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { generateInviteCode } from "./actions";
 
+type InviteRow = {
+  code: string;
+  used_by: string | null;
+  expires_at: string;
+  created_at: string;
+  profiles: { username: string } | null;
+};
+
 export default async function AdminInvitesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -10,11 +18,13 @@ export default async function AdminInvitesPage() {
     redirect("/home");
   }
 
-  const { data: codes } = await supabase
+  const { data: codesRaw } = await supabase
     .from("invitation_codes")
     .select("code, used_by, expires_at, created_at, profiles!used_by(username)")
     .order("created_at", { ascending: false })
     .limit(50);
+
+  const codes = (codesRaw ?? []) as unknown as InviteRow[];
 
   return (
     <div className="min-h-screen p-8 max-w-2xl mx-auto">
@@ -34,10 +44,10 @@ export default async function AdminInvitesPage() {
       </form>
 
       <div className="space-y-2">
-        {codes?.map((c) => {
+        {codes.map((c) => {
           const used = !!c.used_by;
           const expired = new Date(c.expires_at) < new Date();
-          const profile = c.profiles as { username: string } | null;
+          const profile = c.profiles;
 
           return (
             <div
