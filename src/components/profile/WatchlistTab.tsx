@@ -10,7 +10,7 @@ import { WatchlistFilters } from "./WatchlistFilters";
 interface Props {
   userId: string;
   isOwn: boolean;
-  filters?: { type?: string; status?: string; rating?: string; platform?: string };
+  filters?: { type?: string; status?: string; rating?: string; platform?: string; genre?: string; year?: string };
 }
 
 export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
@@ -27,10 +27,71 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
   if (filters.rating && filters.rating !== "all") query = query.gte("rating", Number(filters.rating));
   if (filters.platform && filters.platform !== "all") query = query.eq("platform", filters.platform as Platform);
 
-  const [{ data: items }, { data: allItems }] = await Promise.all([
+  const [{ data: rawItems }, { data: allItems }] = await Promise.all([
     query.limit(200),
     supabase.from("user_media").select("platform").eq("user_id", userId).not("platform", "is", null),
   ]);
+
+  let items = rawItems ?? [];
+
+  // Genre / year filtering via media_cache
+  const needsCacheFilter = (filters.genre && filters.genre !== "all") || (filters.year && filters.year !== "all");
+  let genres: string[] = [];
+  let decades: string[] = [];
+
+  if (items.length) {
+    const byType: Record<string, number[]> = { movie: [], series: [], anime: [] };
+    for (const i of items) byType[i.media_type]?.push(i.external_id);
+
+    const cacheResults = await Promise.all(
+      (["movie", "series", "anime"] as const).map((t) =>
+        byType[t].length
+          ? supabase.from("media_cache").select("external_id, genres, year").eq("media_type", t).in("external_id", byType[t])
+          : Promise.resolve({ data: [] })
+      )
+    );
+
+    const cacheMap = new Map<string, { genres: string[]; year: number | null }>();
+    for (const { data } of cacheResults) {
+      for (const row of (data ?? []) as { external_id: number; genres: string[]; year: number | null }[]) {
+        const mediaType = cacheResults.indexOf(cacheResults.find(r => (r.data ?? []).includes(row))!) === 0 ? "movie" : cacheResults.indexOf(cacheResults.find(r => (r.data ?? []).includes(row))!) === 1 ? "series" : "anime";
+        cacheMap.set(`${mediaType}-${row.external_id}`, { genres: row.genres, year: row.year });
+      }
+    }
+
+    // Rebuild properly
+    cacheMap.clear();
+    const types = ["movie", "series", "anime"] as const;
+    for (let ti = 0; ti < 3; ti++) {
+      const t = types[ti];
+      for (const row of (cacheResults[ti].data ?? []) as { external_id: number; genres: string[]; year: number | null }[]) {
+        cacheMap.set(`${t}-${row.external_id}`, { genres: row.genres, year: row.year });
+      }
+    }
+
+    // Build unique genres and decades for the filter UI
+    const allGenres = new Set<string>();
+    const allDecades = new Set<string>();
+    for (const [, v] of cacheMap) {
+      for (const g of (v.genres ?? [])) allGenres.add(g);
+      if (v.year) allDecades.add(String(Math.floor(v.year / 10) * 10));
+    }
+    genres = [...allGenres].sort();
+    decades = [...allDecades].sort((a, b) => Number(b) - Number(a));
+
+    if (needsCacheFilter) {
+      items = items.filter((item) => {
+        const cached = cacheMap.get(`${item.media_type}-${item.external_id}`);
+        if (!cached) return false;
+        if (filters.genre && filters.genre !== "all" && !(cached.genres ?? []).includes(filters.genre)) return false;
+        if (filters.year && filters.year !== "all" && cached.year) {
+          const itemDecade = String(Math.floor(cached.year / 10) * 10);
+          if (itemDecade !== filters.year) return false;
+        }
+        return true;
+      });
+    }
+  }
 
   const platforms = [...new Set(
     (allItems ?? []).map((i: { platform: string | null }) => i.platform).filter(Boolean)
@@ -41,15 +102,17 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
     status: filters.status ?? "",
     rating: filters.rating ?? "",
     platform: filters.platform ?? "",
+    genre: filters.genre ?? "",
+    year: filters.year ?? "",
   };
 
   const filterBar = (
     <Suspense>
-      <WatchlistFilters platforms={platforms} currentFilters={currentFilters} />
+      <WatchlistFilters platforms={platforms} genres={genres} decades={decades} currentFilters={currentFilters} />
     </Suspense>
   );
 
-  if (!items?.length) {
+  if (!items.length) {
     return (
       <div>
         {filterBar}

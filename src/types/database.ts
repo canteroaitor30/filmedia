@@ -219,6 +219,28 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
         Relationships: [];
       };
+      media_cache: {
+        Row: {
+          media_type: string;
+          external_id: number;
+          title: string;
+          genres: string[];
+          runtime_minutes: number | null;
+          year: number | null;
+          cached_at: string;
+        };
+        Insert: {
+          media_type: string;
+          external_id: number;
+          title: string;
+          genres?: string[];
+          runtime_minutes?: number | null;
+          year?: number | null;
+          cached_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["media_cache"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

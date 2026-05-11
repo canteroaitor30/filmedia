@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { FollowButton } from "@/components/social/FollowButton";
 import { WatchlistTab } from "@/components/profile/WatchlistTab";
+import { StatsTab } from "@/components/profile/StatsTab";
 import { EditProfileButton } from "@/components/profile/EditProfileButton";
 
 export default async function ProfilePage({
@@ -9,9 +11,11 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ type?: string; status?: string; rating?: string; platform?: string }>;
+  searchParams: Promise<{ tab?: string; type?: string; status?: string; rating?: string; platform?: string; genre?: string; year?: string }>;
 }) {
-  const [{ username }, filters] = await Promise.all([params, searchParams]);
+  const [{ username }, sp] = await Promise.all([params, searchParams]);
+  const tab = sp.tab ?? "watchlist";
+  const filters = { type: sp.type, status: sp.status, rating: sp.rating, platform: sp.platform, genre: sp.genre, year: sp.year };
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -70,15 +74,31 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* Watchlist */}
-      {canSeeWatchlist
-        ? <WatchlistTab userId={profile.id} isOwn={isOwn} filters={filters} />
-        : (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-4xl mb-3">🔒</p>
-            <p>Esta watchlist es privada</p>
-          </div>
-        )
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border mb-6">
+        {["watchlist", "stats"].map((t) => (
+          <Link
+            key={t}
+            href={`/u/${profile.username}?tab=${t}`}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              tab === t ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t === "watchlist" ? "Watchlist" : "Estadísticas"}
+          </Link>
+        ))}
+      </div>
+
+      {tab === "stats"
+        ? <StatsTab userId={profile.id} />
+        : canSeeWatchlist
+          ? <WatchlistTab userId={profile.id} isOwn={isOwn} filters={filters} />
+          : (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-4xl mb-3">🔒</p>
+              <p>Esta watchlist es privada</p>
+            </div>
+          )
       }
     </div>
   );

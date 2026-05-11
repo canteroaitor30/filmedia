@@ -5,15 +5,19 @@ import { useCallback } from "react";
 
 interface Props {
   platforms: string[];
+  genres: string[];
+  decades: string[];
   currentFilters: {
     type: string;
     status: string;
     rating: string;
     platform: string;
+    genre: string;
+    year: string;
   };
 }
 
-export function WatchlistFilters({ platforms, currentFilters }: Props) {
+export function WatchlistFilters({ platforms, genres, decades, currentFilters }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -103,22 +107,31 @@ export function WatchlistFilters({ platforms, currentFilters }: Props) {
       {platforms.length > 0 && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs text-muted-foreground w-16">Plataforma</span>
-          <button
-            onClick={() => update("platform", "all")}
-            className={pill(!currentFilters.platform)}
-            style={!currentFilters.platform ? { backgroundColor: "var(--gold)" } : {}}
-          >
-            Todas
-          </button>
+          <button onClick={() => update("platform", "all")} className={pill(!currentFilters.platform)} style={!currentFilters.platform ? { backgroundColor: "var(--gold)" } : {}}>Todas</button>
           {platforms.map((p) => (
-            <button
-              key={p}
-              onClick={() => update("platform", p)}
-              className={pill(currentFilters.platform === p)}
-              style={currentFilters.platform === p ? { backgroundColor: "var(--gold)" } : {}}
-            >
-              {p}
-            </button>
+            <button key={p} onClick={() => update("platform", p)} className={pill(currentFilters.platform === p)} style={currentFilters.platform === p ? { backgroundColor: "var(--gold)" } : {}}>{p}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Género */}
+      {genres.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground w-16">Género</span>
+          <button onClick={() => update("genre", "all")} className={pill(!currentFilters.genre)} style={!currentFilters.genre ? { backgroundColor: "var(--gold)" } : {}}>Todos</button>
+          {genres.map((g) => (
+            <button key={g} onClick={() => update("genre", g)} className={pill(currentFilters.genre === g)} style={currentFilters.genre === g ? { backgroundColor: "var(--gold)" } : {}}>{g}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Década */}
+      {decades.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground w-16">Época</span>
+          <button onClick={() => update("year", "all")} className={pill(!currentFilters.year)} style={!currentFilters.year ? { backgroundColor: "var(--gold)" } : {}}>Todas</button>
+          {decades.map((d) => (
+            <button key={d} onClick={() => update("year", d)} className={pill(currentFilters.year === d)} style={currentFilters.year === d ? { backgroundColor: "var(--gold)" } : {}}>{d}s</button>
           ))}
         </div>
       )}

@@ -22,6 +22,7 @@ export interface AnilistMedia {
   popularity: number;
   genres: string[];
   episodes: number | null;
+  duration: number | null;
   status: string;
   startDate: { year: number | null };
   format: string;
@@ -39,6 +40,7 @@ const MEDIA_FIELDS = `
   popularity
   genres
   episodes
+  duration
   status
   startDate { year }
   format
