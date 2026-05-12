@@ -26,7 +26,7 @@ export async function sendInvite(email: string): Promise<{ error?: string; succe
   const resend = new Resend(process.env.RESEND_API_KEY!);
 
   const { error } = await resend.emails.send({
-    from: "Filmedia <invitaciones@filmedia.us>",
+    from: "Filmedia <onboarding@resend.dev>",
     to: email,
     subject: "Te invito a Filmedia 🎬",
     html: `
