@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveOnboardingRatings } from "@/app/actions/watch";
 import { useRouter } from "next/navigation";
+import { GoldSelect } from "@/components/ui/GoldSelect";
 
 const PRESET_AVATARS = [
   "/avatars/avatar3.webp", "/avatars/avatar4.jpg", "/avatars/avatar5.jpg",
@@ -67,6 +68,8 @@ export function OnboardingFlow({ username, items }: Props) {
   const [isPending, startTransition] = useTransition();
 
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [privacyProfile, setPrivacyProfile] = useState<"public" | "followers" | "private">("public");
+  const [privacyWatchlist, setPrivacyWatchlist] = useState<"public" | "followers" | "private">("public");
 
   const ratingKey = (item: OnboardingItem) => `${item.mediaType}-${item.externalId}`;
   const ratedCount = Object.values(ratings).filter((v) => v > 0).length;
@@ -83,7 +86,7 @@ export function OnboardingFlow({ username, items }: Props) {
         }));
 
       await saveOnboardingRatings(
-        { displayName, bio, avatarUrl: avatarUrl ?? "" },
+        { displayName, bio, avatarUrl: avatarUrl ?? "", privacyProfile, privacyWatchlist },
         ratedItems,
       );
       router.push("/home");
@@ -119,6 +122,7 @@ export function OnboardingFlow({ username, items }: Props) {
                 maxLength={50}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="off"
                 className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
               />
               <p className="text-xs text-muted-foreground mt-1">Si lo dejas vacío se usará tu @usuario</p>
@@ -244,6 +248,31 @@ export function OnboardingFlow({ username, items }: Props) {
             </button>
           );
         })}
+      </div>
+
+      {/* Privacy settings */}
+      <div className="max-w-xs mx-auto w-full space-y-3 mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-center">Privacidad</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground">Perfil</span>
+            <GoldSelect
+              label="Perfil"
+              value={privacyProfile}
+              onChange={(v) => setPrivacyProfile(v as typeof privacyProfile)}
+              options={[{ value: "public", label: "Público" }, { value: "followers", label: "Solo seguidores" }, { value: "private", label: "Privado" }]}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground">Watchlist e historial</span>
+            <GoldSelect
+              label="Watchlist"
+              value={privacyWatchlist}
+              onChange={(v) => setPrivacyWatchlist(v as typeof privacyWatchlist)}
+              options={[{ value: "public", label: "Público" }, { value: "followers", label: "Solo seguidores" }, { value: "private", label: "Privado" }]}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col items-center gap-3">

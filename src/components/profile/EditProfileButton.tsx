@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Settings } from "lucide-react";
+import { GoldSelect } from "@/components/ui/GoldSelect";
 
 const PRESET_AVATARS = [
   "/avatars/avatar3.webp", "/avatars/avatar4.jpg", "/avatars/avatar5.jpg",
@@ -12,11 +13,15 @@ const PRESET_AVATARS = [
   "/avatars/avatar12.jpg", "/avatars/avatar13.webp", "/avatars/avatar15.jpg",
 ];
 
+type Privacy = "public" | "followers" | "private";
+
 interface Props {
   profile: {
     display_name: string | null;
     bio: string | null;
     avatar_url: string | null;
+    privacy_profile: Privacy;
+    privacy_watchlist: Privacy;
   };
 }
 
@@ -25,6 +30,8 @@ export function EditProfileButton({ profile }: Props) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? "");
+  const [privacyProfile, setPrivacyProfile] = useState<Privacy>(profile.privacy_profile);
+  const [privacyWatchlist, setPrivacyWatchlist] = useState<Privacy>(profile.privacy_watchlist);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -39,6 +46,8 @@ export function EditProfileButton({ profile }: Props) {
         display_name: displayName.trim() || null,
         bio: bio.trim() || null,
         avatar_url: avatarUrl || null,
+        privacy_profile: privacyProfile,
+        privacy_watchlist: privacyWatchlist,
       }).eq("id", user.id);
       setOpen(false);
       router.refresh();
@@ -46,6 +55,7 @@ export function EditProfileButton({ profile }: Props) {
       setSaving(false);
     }
   }
+
 
   return (
     <>
@@ -102,6 +112,31 @@ export function EditProfileButton({ profile }: Props) {
                   className="w-full rounded-lg border border-border/60 bg-secondary/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-[var(--gold)]/60 focus:ring-1 focus:ring-[var(--gold)]/30 resize-none"
                 />
                 <p className="text-xs text-muted-foreground/60 mt-1">{bio.length}/160</p>
+              </div>
+
+              {/* Privacy */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">Privacidad</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">Perfil</span>
+                    <GoldSelect
+                      label="Perfil"
+                      value={privacyProfile}
+                      onChange={(v) => setPrivacyProfile(v as Privacy)}
+                      options={[{ value: "public", label: "Público" }, { value: "followers", label: "Solo seguidores" }, { value: "private", label: "Privado" }]}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">Watchlist</span>
+                    <GoldSelect
+                      label="Watchlist"
+                      value={privacyWatchlist}
+                      onChange={(v) => setPrivacyWatchlist(v as Privacy)}
+                      options={[{ value: "public", label: "Público" }, { value: "followers", label: "Solo seguidores" }, { value: "private", label: "Privado" }]}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-1">

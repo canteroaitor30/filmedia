@@ -50,7 +50,7 @@ export async function deleteWatchEntry(entryId: string) {
 }
 
 export async function saveOnboardingRatings(
-  profileData: { displayName: string; bio: string; avatarUrl: string },
+  profileData: { displayName: string; bio: string; avatarUrl: string; privacyProfile?: string; privacyWatchlist?: string },
   ratings: { mediaType: MediaType; externalId: number; title: string; rating: number }[]
 ) {
   const supabase = await createClient();
@@ -61,6 +61,8 @@ export async function saveOnboardingRatings(
     display_name: profileData.displayName || null,
     bio: profileData.bio || null,
     avatar_url: profileData.avatarUrl || null,
+    privacy_profile: (profileData.privacyProfile ?? "public") as "public" | "followers" | "private",
+    privacy_watchlist: (profileData.privacyWatchlist ?? "public") as "public" | "followers" | "private",
     onboarding_completed: true,
   }).eq("id", user.id);
 
