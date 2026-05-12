@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { validateInviteCode, signUpWithCode } from "./actions";
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"code" | "account">("code");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(searchParams.get("code") ?? "");
   const [codeId, setCodeId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
