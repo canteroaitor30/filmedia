@@ -102,3 +102,46 @@ export const ANIME_GENRES = [
   "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life",
   "Sports", "Supernatural", "Thriller",
 ];
+
+export const GENRE_ES: Record<string, string> = {
+  Action: "Acción",
+  Adventure: "Aventura",
+  Comedy: "Comedia",
+  Drama: "Drama",
+  Fantasy: "Fantasía",
+  Horror: "Terror",
+  Mystery: "Misterio",
+  Romance: "Romance",
+  "Sci-Fi": "Ciencia ficción",
+  "Slice of Life": "Slice of life",
+  Sports: "Deportes",
+  Supernatural: "Sobrenatural",
+  Thriller: "Thriller",
+  "Martial Arts": "Artes marciales",
+  Music: "Música",
+  Psychological: "Psicológico",
+  Ecchi: "Ecchi",
+  Mecha: "Mecha",
+  Magic: "Magia",
+  "School": "Escolar",
+  "Action & Adventure": "Acción y aventura",
+  "Science Fiction": "Ciencia ficción",
+  "Science Fiction & Fantasy": "Ciencia ficción",
+  "War & Politics": "Guerra y política",
+  "Kids": "Infantil",
+  "Reality": "Telerrealidad",
+  "Talk": "Tertulias",
+  "News": "Noticias",
+  "Soap": "Telenovela",
+  "Family": "Familia",
+  "Western": "Western",
+  "Crime": "Crimen",
+  "Documentary": "Documental",
+  "History": "Historia",
+  "Animation": "Animación",
+  "War": "Guerra",
+};
+
+export function translateGenre(genre: string): string {
+  return GENRE_ES[genre] ?? genre;
+}

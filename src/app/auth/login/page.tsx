@@ -31,8 +31,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{ backgroundImage: "url('/fondo6.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="relative z-10 w-full max-w-sm bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/50">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--gold)" }}>
             Filmedia
@@ -93,3 +97,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

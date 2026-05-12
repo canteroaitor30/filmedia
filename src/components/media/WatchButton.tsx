@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveWatchEntry, deleteWatchEntry } from "@/app/actions/watch";
-import type { MediaType, MediaStatus, Platform } from "@/types/database";
+import type { MediaType, Platform } from "@/types/database";
 
 const PLATFORMS: Platform[] = [
   "Netflix", "HBO Max", "Prime", "Disney+", "Apple TV+",
@@ -18,12 +18,11 @@ interface Props {
 
 export function WatchButton({ mediaType, externalId, title }: Props) {
   const [entryId, setEntryId] = useState<string | null>(null);
-  const [currentStatus, setCurrentStatus] = useState<MediaStatus | null>(null);
+  const [isWatched, setIsWatched] = useState(false);
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [status, setStatus] = useState<MediaStatus>("watched");
   const [rating, setRating] = useState<number | null>(null);
   const [platform, setPlatform] = useState<Platform | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,13 +38,12 @@ export function WatchButton({ mediaType, externalId, title }: Props) {
         .eq("user_id", user.id)
         .eq("media_type", mediaType)
         .eq("external_id", externalId)
-        .single();
-      if (data) {
+        .maybeSingle();
+      if (data && data.status === "watched") {
         setEntryId(data.id);
-        setCurrentStatus(data.status);
+        setIsWatched(true);
         setCurrentRating(data.rating);
         setCurrentPlatform(data.platform);
-        setStatus(data.status);
         setRating(data.rating);
         setPlatform(data.platform);
       }
@@ -57,13 +55,13 @@ export function WatchButton({ mediaType, externalId, title }: Props) {
   async function save() {
     setSaving(true);
     const result = await saveWatchEntry({
-      mediaType, externalId, status, rating, platform, title,
+      mediaType, externalId, status: "watched", rating, platform, title,
       entryId: entryId ?? undefined,
     });
     if (result.id) setEntryId(result.id);
-    setCurrentStatus(status);
-    setCurrentRating(status === "watched" ? rating : null);
-    setCurrentPlatform(status === "watched" ? platform : null);
+    setIsWatched(true);
+    setCurrentRating(rating);
+    setCurrentPlatform(platform);
     setShowModal(false);
     setSaving(false);
   }
@@ -73,30 +71,27 @@ export function WatchButton({ mediaType, externalId, title }: Props) {
     setSaving(true);
     await deleteWatchEntry(entryId);
     setEntryId(null);
-    setCurrentStatus(null);
+    setIsWatched(false);
     setCurrentRating(null);
     setCurrentPlatform(null);
-    setStatus("watched");
     setRating(null);
     setPlatform(null);
     setShowModal(false);
     setSaving(false);
   }
 
-  if (loading) return <div className="h-9 w-32 rounded-md bg-secondary animate-pulse" />;
+  if (loading) return <div className="h-9 w-24 rounded-md bg-secondary animate-pulse" />;
 
-  const label = !currentStatus
-    ? "Añadir"
-    : currentStatus === "watched"
-    ? `Visto · ${currentRating ? `${currentRating}★` : "Sin nota"}`
-    : "Pendiente";
+  const label = isWatched
+    ? currentRating ? `${currentRating}★` : "Visto"
+    : "Valorar";
 
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
+        onClick={() => { setRating(currentRating); setPlatform(currentPlatform); setShowModal(true); }}
         className="rounded-md px-4 py-2 text-sm font-semibold transition-colors"
-        style={currentStatus
+        style={isWatched
           ? { backgroundColor: "var(--secondary)", color: "var(--foreground)", border: "1px solid var(--border)" }
           : { backgroundColor: "var(--gold)", color: "#0A0A0A" }}
       >
@@ -108,40 +103,25 @@ export function WatchButton({ mediaType, externalId, title }: Props) {
           <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold mb-4 truncate">{title}</h3>
 
-            <div className="flex gap-2 mb-5">
-              {(["watched", "pending"] as MediaStatus[]).map((s) => (
-                <button key={s} onClick={() => setStatus(s)}
-                  className="flex-1 py-2 rounded-md text-sm font-medium border transition-colors"
-                  style={status === s
+            <p className="text-xs text-muted-foreground mb-2">Nota (opcional)</p>
+            <div className="flex gap-1 mb-5 flex-wrap">
+              {[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((r) => (
+                <button key={r} onClick={() => setRating(rating === r ? null : r)}
+                  className="px-2 py-1 rounded text-xs border transition-colors"
+                  style={rating === r
                     ? { backgroundColor: "var(--gold)", color: "#0A0A0A", borderColor: "var(--gold)" }
                     : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
-                  {s === "watched" ? "Visto" : "Pendiente"}
+                  {r}★
                 </button>
               ))}
             </div>
 
-            {status === "watched" && (
-              <>
-                <p className="text-xs text-muted-foreground mb-2">Nota (opcional)</p>
-                <div className="flex gap-1 mb-5 flex-wrap">
-                  {[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((r) => (
-                    <button key={r} onClick={() => setRating(rating === r ? null : r)}
-                      className="px-2 py-1 rounded text-xs border transition-colors"
-                      style={rating === r
-                        ? { backgroundColor: "var(--gold)", color: "#0A0A0A", borderColor: "var(--gold)" }
-                        : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
-                      {r}★
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">Plataforma (opcional)</p>
-                <select value={platform ?? ""} onChange={(e) => setPlatform(e.target.value as Platform || null)}
-                  className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm mb-5">
-                  <option value="">— Sin especificar —</option>
-                  {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </>
-            )}
+            <p className="text-xs text-muted-foreground mb-2">Plataforma (opcional)</p>
+            <select value={platform ?? ""} onChange={(e) => setPlatform(e.target.value as Platform || null)}
+              className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm mb-5">
+              <option value="">— Sin especificar —</option>
+              {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
 
             <div className="flex gap-2">
               <button onClick={save} disabled={saving}

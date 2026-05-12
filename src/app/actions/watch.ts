@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePath } from "next/cache";
 import { tmdbMovies, tmdbSeries } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
 import type { MediaType, MediaStatus, Platform } from "@/types/database";
@@ -44,7 +45,8 @@ export async function saveWatchEntry(params: {
 
 export async function deleteWatchEntry(entryId: string) {
   const supabase = await createClient();
-  await supabase.from("user_media").delete().eq("id", entryId);
+  const { error } = await supabase.from("user_media").delete().eq("id", entryId);
+  if (error) throw new Error(error.message);
 }
 
 export async function saveOnboardingRatings(
@@ -72,10 +74,13 @@ export async function saveOnboardingRatings(
         rating: r.rating,
         watched_at: new Date().toISOString(),
       })),
-      { onConflict: "user_id,media_type,external_id" }
+      { onConflict: "user_id,media_type,external_id", ignoreDuplicates: true }
     );
     ratings.forEach((r) => populateCache(r.mediaType, r.externalId, r.title).catch(() => {}));
   }
+
+  revalidatePath("/home");
+  revalidatePath("/onboarding");
 }
 
 async function populateCache(mediaType: MediaType, externalId: number, title: string) {

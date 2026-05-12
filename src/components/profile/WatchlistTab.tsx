@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
-import type { MediaType, MediaStatus, Platform } from "@/types/database";
+import type { MediaType, Platform } from "@/types/database";
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
@@ -10,31 +10,37 @@ import { WatchlistFilters } from "./WatchlistFilters";
 interface Props {
   userId: string;
   isOwn: boolean;
-  filters?: { type?: string; status?: string; rating?: string; platform?: string; genre?: string; year?: string };
+  forcedStatus: "watched" | "pending";
+  filters?: { type?: string; rating?: string; platform?: string; genre?: string; year?: string; sort?: string };
 }
 
-export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
+export async function WatchlistTab({ userId, isOwn, forcedStatus, filters = {} }: Props) {
   const supabase = await createClient();
+
+  const sortOrder = filters.sort === "asc"
+    ? { column: "rating", ascending: true }
+    : filters.sort === "desc"
+    ? { column: "rating", ascending: false }
+    : { column: "updated_at", ascending: false };
 
   let query = supabase
     .from("user_media")
     .select("media_type, external_id, status, rating, platform")
     .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+    .eq("status", forcedStatus)
+    .order(sortOrder.column, { ascending: sortOrder.ascending });
 
   if (filters.type && filters.type !== "all") query = query.eq("media_type", filters.type as MediaType);
-  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status as MediaStatus);
-  if (filters.rating && filters.rating !== "all") query = query.gte("rating", Number(filters.rating));
-  if (filters.platform && filters.platform !== "all") query = query.eq("platform", filters.platform as Platform);
+  if (forcedStatus === "watched" && filters.rating && filters.rating !== "all") query = query.gte("rating", Number(filters.rating));
+  if (forcedStatus === "watched" && filters.platform && filters.platform !== "all") query = query.eq("platform", filters.platform as Platform);
 
   const [{ data: rawItems }, { data: allItems }] = await Promise.all([
     query.limit(200),
-    supabase.from("user_media").select("platform").eq("user_id", userId).not("platform", "is", null),
+    supabase.from("user_media").select("platform").eq("user_id", userId).eq("status", "watched").not("platform", "is", null),
   ]);
 
   let items = rawItems ?? [];
 
-  // Genre / year filtering via media_cache
   const needsCacheFilter = (filters.genre && filters.genre !== "all") || (filters.year && filters.year !== "all");
   let genres: string[] = [];
   let decades: string[] = [];
@@ -52,15 +58,6 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
     );
 
     const cacheMap = new Map<string, { genres: string[]; year: number | null }>();
-    for (const { data } of cacheResults) {
-      for (const row of (data ?? []) as { external_id: number; genres: string[]; year: number | null }[]) {
-        const mediaType = cacheResults.indexOf(cacheResults.find(r => (r.data ?? []).includes(row))!) === 0 ? "movie" : cacheResults.indexOf(cacheResults.find(r => (r.data ?? []).includes(row))!) === 1 ? "series" : "anime";
-        cacheMap.set(`${mediaType}-${row.external_id}`, { genres: row.genres, year: row.year });
-      }
-    }
-
-    // Rebuild properly
-    cacheMap.clear();
     const types = ["movie", "series", "anime"] as const;
     for (let ti = 0; ti < 3; ti++) {
       const t = types[ti];
@@ -69,7 +66,6 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
       }
     }
 
-    // Build unique genres and decades for the filter UI
     const allGenres = new Set<string>();
     const allDecades = new Set<string>();
     for (const [, v] of cacheMap) {
@@ -99,16 +95,22 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
 
   const currentFilters = {
     type: filters.type ?? "",
-    status: filters.status ?? "",
     rating: filters.rating ?? "",
     platform: filters.platform ?? "",
     genre: filters.genre ?? "",
     year: filters.year ?? "",
+    sort: filters.sort ?? "",
   };
 
   const filterBar = (
     <Suspense>
-      <WatchlistFilters platforms={platforms} genres={genres} decades={decades} currentFilters={currentFilters} />
+      <WatchlistFilters
+        platforms={platforms}
+        genres={genres}
+        decades={decades}
+        mode={forcedStatus === "watched" ? "historial" : "watchlist"}
+        currentFilters={currentFilters}
+      />
     </Suspense>
   );
 
@@ -142,8 +144,6 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
   );
 
   const valid = details.filter(Boolean) as NonNullable<typeof details[0]>[];
-  const watched = valid.filter((i) => i.status === "watched");
-  const pending = valid.filter((i) => i.status === "pending");
   const activeCount = Object.values(filters).filter((v) => v && v !== "all").length;
 
   return (
@@ -152,46 +152,22 @@ export async function WatchlistTab({ userId, isOwn, filters = {} }: Props) {
       {activeCount > 0 && (
         <p className="text-xs text-muted-foreground mb-4">{valid.length} resultado{valid.length !== 1 ? "s" : ""}</p>
       )}
-      <div className="space-y-8">
-        {filters.status !== "pending" && watched.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold mb-4">Vistos <span className="text-muted-foreground font-normal text-sm">({watched.length})</span></h2>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {watched.map((item) => (
-                <Link key={`${item.media_type}-${item.external_id}`} href={item.href} className="group">
-                  <div className="aspect-[2/3] rounded overflow-hidden bg-secondary relative">
-                    {item.poster
-                      ? <Image src={item.poster} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="120px" />
-                      : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-1 text-center">{item.title}</div>
-                    }
-                    {item.rating && (
-                      <div className="absolute bottom-1 right-1 text-xs font-bold rounded px-1" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
-                        {item.rating}★
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+        {valid.map((item) => (
+          <Link key={`${item.media_type}-${item.external_id}`} href={item.href} className="group">
+            <div className="aspect-[2/3] rounded overflow-hidden bg-secondary relative">
+              {item.poster
+                ? <Image src={item.poster} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="120px" />
+                : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-1 text-center">{item.title}</div>
+              }
+              {item.rating && (
+                <div className="absolute bottom-1 right-1 text-xs font-bold rounded px-1" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
+                  {item.rating}★
+                </div>
+              )}
             </div>
-          </section>
-        )}
-        {filters.status !== "watched" && pending.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold mb-4">Pendientes <span className="text-muted-foreground font-normal text-sm">({pending.length})</span></h2>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {pending.map((item) => (
-                <Link key={`${item.media_type}-${item.external_id}`} href={item.href} className="group">
-                  <div className="aspect-[2/3] rounded overflow-hidden bg-secondary relative">
-                    {item.poster
-                      ? <Image src={item.poster} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="120px" />
-                      : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-1 text-center">{item.title}</div>
-                    }
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+          </Link>
+        ))}
       </div>
     </div>
   );

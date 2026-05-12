@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreateListButton } from "@/components/lists/CreateListButton";
+import { ListVideo } from "lucide-react";
 
 export default async function ListsPage() {
   const supabase = await createClient();
@@ -25,7 +26,7 @@ export default async function ListsPage() {
 
       {!lists?.length ? (
         <div className="text-center py-20 text-muted-foreground">
-          <p className="text-4xl mb-3">📋</p>
+          <ListVideo size={48} className="mx-auto mb-3" style={{ color: "var(--gold)" }} />
           <p>Aún no tienes listas. ¡Crea una!</p>
         </div>
       ) : (

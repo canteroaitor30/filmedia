@@ -1,7 +1,9 @@
 import { tmdbSeries, posterUrl, backdropUrl } from "@/lib/tmdb/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { WatchButton } from "@/components/media/WatchButton";
+import { WatchlistButton } from "@/components/media/WatchlistButton";
 import { ReviewSection } from "@/components/media/ReviewSection";
 import { AddToListButton } from "@/components/lists/AddToListButton";
 
@@ -63,6 +65,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
 
           <div className="mt-5 flex flex-wrap gap-2">
             <WatchButton mediaType="series" externalId={seriesId} title={series.name} />
+            <WatchlistButton mediaType="series" externalId={seriesId} title={series.name} />
             <AddToListButton mediaType="series" externalId={seriesId} />
           </div>
         </div>
@@ -78,21 +81,25 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
           <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
             {credits.cast.slice(0, 20).map((p) => (
               <div key={p.id} className="flex-shrink-0 w-24 text-center">
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-secondary mx-auto">
-                  {p.profile_path ? (
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w185${p.profile_path}`}
-                      alt={p.name}
-                      width={96}
-                      height={96}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl text-muted-foreground">👤</div>
-                  )}
-                </div>
+                <Link href={`/person/${p.id}`} className="block">
+                  <div className="w-24 h-24 rounded-full p-0.5 mx-auto hover:ring-2 hover:ring-offset-1 hover:ring-[var(--gold)] transition-all ring-offset-background">
+                    <div className="w-full h-full rounded-full overflow-hidden bg-secondary">
+                      {p.profile_path ? (
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${p.profile_path}`}
+                          alt={p.name}
+                          width={96}
+                          height={96}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <img src="/perfil2.jpg" alt="Usuario" className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                  </div>
+                </Link>
                 <p className="text-xs mt-1 font-medium truncate">{p.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{p.character}</p>
+                <p className="text-xs text-muted-foreground truncate">{p.roles?.[0]?.character ?? ""}</p>
               </div>
             ))}
           </div>

@@ -4,6 +4,13 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+const PRESET_AVATARS = [
+  "/avatars/avatar3.webp", "/avatars/avatar4.jpg", "/avatars/avatar5.jpg",
+  "/avatars/avatar6.jpg", "/avatars/avatar7.webp", "/avatars/avatar8.webp",
+  "/avatars/avatar9.jpg", "/avatars/avatar10.jpg", "/avatars/avatar11.webp",
+  "/avatars/avatar12.jpg", "/avatars/avatar13.webp", "/avatars/avatar15.jpg",
+];
+
 interface Props {
   profile: {
     display_name: string | null;
@@ -23,17 +30,20 @@ export function EditProfileButton({ profile }: Props) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("profiles").update({
-      display_name: displayName.trim() || null,
-      bio: bio.trim() || null,
-      avatar_url: avatarUrl.trim() || null,
-    }).eq("id", user.id);
-    setSaving(false);
-    setOpen(false);
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("profiles").update({
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+        avatar_url: avatarUrl || null,
+      }).eq("id", user.id);
+      setOpen(false);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -47,9 +57,28 @@ export function EditProfileButton({ profile }: Props) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(false)}>
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold mb-4">Editar perfil</h3>
             <form onSubmit={save} className="space-y-4">
+
+              {/* Avatar picker */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Foto de perfil</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {PRESET_AVATARS.map((src) => (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => setAvatarUrl(src)}
+                      className="aspect-square rounded-full overflow-hidden transition-all"
+                      style={avatarUrl === src ? { outline: "3px solid var(--gold)", outlineOffset: "3px" } : {}}
+                    >
+                      <img src={src} alt="Avatar" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre visible</label>
                 <input
@@ -60,6 +89,7 @@ export function EditProfileButton({ profile }: Props) {
                   className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Bio</label>
                 <textarea
@@ -71,16 +101,7 @@ export function EditProfileButton({ profile }: Props) {
                 />
                 <p className="text-xs text-muted-foreground mt-1">{bio.length}/160</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">URL de avatar</label>
-                <input
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  type="url"
-                  placeholder="https://..."
-                  className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
+
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"

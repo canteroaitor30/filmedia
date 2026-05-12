@@ -1,0 +1,186 @@
+import { tmdbPerson, posterUrl } from "@/lib/tmdb/client";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import type { TmdbPersonCredit } from "@/lib/tmdb/client";
+
+function CreditCard({ credit }: { credit: TmdbPersonCredit }) {
+  const isMovie = credit.media_type === "movie";
+  const title = credit.title ?? credit.name ?? "";
+  const year = credit.release_date
+    ? new Date(credit.release_date).getFullYear()
+    : credit.first_air_date
+    ? new Date(credit.first_air_date).getFullYear()
+    : null;
+  const href = isMovie ? `/movies/${credit.id}` : `/series/${credit.id}`;
+  const poster = posterUrl(credit.poster_path, "w185");
+
+  return (
+    <Link href={href} className="flex-shrink-0 w-28 group">
+      <div className="aspect-[2/3] rounded-md overflow-hidden bg-secondary relative">
+        {poster ? (
+          <Image
+            src={poster}
+            alt={title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs text-center p-2">
+            {title}
+          </div>
+        )}
+        <div className="absolute top-1 right-1">
+          <span className="text-[9px] px-1 py-0.5 rounded font-medium bg-black/60 text-white">
+            {isMovie ? "Peli" : "Serie"}
+          </span>
+        </div>
+      </div>
+      <p className="text-xs mt-1 font-medium leading-tight line-clamp-2">{title}</p>
+      {year && <p className="text-[10px] text-muted-foreground">{year}</p>}
+      {(credit.character || credit.job) && (
+        <p className="text-[10px] text-muted-foreground truncate italic">
+          {credit.character ?? credit.job}
+        </p>
+      )}
+    </Link>
+  );
+}
+
+export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const personId = Number(id);
+  if (isNaN(personId)) notFound();
+
+  const [person, credits] = await Promise.all([
+    tmdbPerson.detail(personId).catch(() => null),
+    tmdbPerson.combinedCredits(personId).catch(() => ({ cast: [], crew: [] })),
+  ]);
+
+  if (!person) notFound();
+
+  const profileImg = person.profile_path
+    ? `https://image.tmdb.org/t/p/w342${person.profile_path}`
+    : null;
+
+  // Deduplicate and sort cast credits by vote_average desc, filter noise
+  const seen = new Set<number>();
+  const castCredits = credits.cast
+    .filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return c.poster_path && c.vote_average > 0;
+    })
+    .sort((a, b) => b.vote_average - a.vote_average);
+
+  // Director/creator credits from crew (deduplicated)
+  const seenCrew = new Set<number>();
+  const crewCredits = credits.crew
+    .filter((c) => {
+      if (seenCrew.has(c.id)) return false;
+      seenCrew.add(c.id);
+      return (
+        c.poster_path &&
+        c.vote_average > 0 &&
+        (c.job === "Director" || c.job === "Creator" || c.job === "Executive Producer")
+      );
+    })
+    .sort((a, b) => b.vote_average - a.vote_average);
+
+  const movieCast = castCredits.filter((c) => c.media_type === "movie");
+  const tvCast = castCredits.filter((c) => c.media_type === "tv");
+
+  const dept: Record<string, string> = {
+    Acting: "Actor/Actriz",
+    Directing: "Director/a",
+    Writing: "Guionista",
+    Production: "Producción",
+  };
+  const deptLabel = dept[person.known_for_department] ?? person.known_for_department;
+
+  const birthYear = person.birthday ? new Date(person.birthday).getFullYear() : null;
+  const age = birthYear ? new Date().getFullYear() - birthYear : null;
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex gap-6 mb-8">
+        <div className="flex-shrink-0">
+          <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden bg-secondary shadow-2xl">
+            {profileImg ? (
+              <Image
+                src={profileImg}
+                alt={person.name}
+                width={176}
+                height={176}
+                className="object-cover w-full h-full"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-4xl text-muted-foreground">
+                ?
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 pt-2">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="text-2xl md:text-3xl font-bold">{person.name}</h1>
+            <span
+              className="text-xs px-2 py-0.5 rounded font-medium"
+              style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}
+            >
+              {deptLabel}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-3">
+            {age && <span>{age} años</span>}
+            {person.place_of_birth && <span>{person.place_of_birth}</span>}
+          </div>
+
+          {person.biography && (
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-5 max-w-2xl">
+              {person.biography}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Cast credits */}
+      {movieCast.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold mb-3">Películas</h2>
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+            {movieCast.map((c) => (
+              <CreditCard key={c.id} credit={c} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {tvCast.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold mb-3">Series</h2>
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+            {tvCast.map((c) => (
+              <CreditCard key={c.id} credit={c} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {crewCredits.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold mb-3">Como director/creador</h2>
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+            {crewCredits.map((c) => (
+              <CreditCard key={c.id} credit={c} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

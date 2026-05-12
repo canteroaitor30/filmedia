@@ -76,7 +76,10 @@ export const tmdbMovies = {
   recommendations: (id: number) =>
     tmdb<TmdbPage<TmdbMovie>>(`/movie/${id}/recommendations`),
   credits: (id: number) =>
-    tmdb<{ cast: { id: number; name: string; character: string; profile_path: string | null }[] }>(`/movie/${id}/credits`),
+    tmdb<{
+      cast: { id: number; name: string; character: string; profile_path: string | null }[];
+      crew: { id: number; name: string; job: string; profile_path: string | null }[];
+    }>(`/movie/${id}/credits`),
 };
 
 // Series
@@ -101,7 +104,40 @@ export const tmdbSeries = {
   recommendations: (id: number) =>
     tmdb<TmdbPage<TmdbSeries>>(`/tv/${id}/recommendations`),
   credits: (id: number) =>
-    tmdb<{ cast: { id: number; name: string; character: string; profile_path: string | null }[] }>(`/tv/${id}/aggregate_credits`),
+    tmdb<{
+      cast: { id: number; name: string; profile_path: string | null; total_episode_count: number; roles?: { character: string }[] }[];
+      crew: { id: number; name: string; profile_path: string | null; jobs: { job: string }[] }[];
+    }>(`/tv/${id}/aggregate_credits`),
+};
+
+export interface TmdbPerson {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string;
+}
+
+export interface TmdbPersonCredit {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path: string | null;
+  release_date?: string;
+  first_air_date?: string;
+  vote_average: number;
+  character?: string;
+  job?: string;
+  media_type: "movie" | "tv";
+}
+
+export const tmdbPerson = {
+  detail: (id: number) =>
+    tmdb<TmdbPerson>(`/person/${id}`),
+  combinedCredits: (id: number) =>
+    tmdb<{ cast: TmdbPersonCredit[]; crew: TmdbPersonCredit[] }>(`/person/${id}/combined_credits`),
 };
 
 export function posterUrl(path: string | null, size: "w185" | "w342" | "w500" | "original" = "w342") {

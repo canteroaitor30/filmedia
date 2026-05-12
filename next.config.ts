@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       { hostname: "image.tmdb.org" },
       { hostname: "s4.anilist.co" },
       { hostname: "img.anili.st" },
+      { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
 };

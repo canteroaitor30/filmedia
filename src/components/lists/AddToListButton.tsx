@@ -17,14 +17,17 @@ export function AddToListButton({ mediaType, externalId }: Props) {
 
   async function loadLists() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: myLists } = await supabase.from("custom_lists").select("id, title").eq("user_id", user.id);
-    const { data: existing } = await supabase.from("custom_list_items")
-      .select("list_id").eq("media_type", mediaType).eq("external_id", externalId);
-    const existingIds = new Set(existing?.map((e) => e.list_id));
-    setLists((myLists ?? []).map((l) => ({ ...l, hasItem: existingIds.has(l.id) })));
-    setLoading(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: myLists } = await supabase.from("custom_lists").select("id, title").eq("user_id", user.id);
+      const { data: existing } = await supabase.from("custom_list_items")
+        .select("list_id").eq("media_type", mediaType).eq("external_id", externalId);
+      const existingIds = new Set(existing?.map((e) => e.list_id));
+      setLists((myLists ?? []).map((l) => ({ ...l, hasItem: existingIds.has(l.id) })));
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggle(listId: string, hasItem: boolean) {
@@ -33,7 +36,7 @@ export function AddToListButton({ mediaType, externalId }: Props) {
         .eq("list_id", listId).eq("media_type", mediaType).eq("external_id", externalId);
     } else {
       const { data: last } = await supabase.from("custom_list_items")
-        .select("position").eq("list_id", listId).order("position", { ascending: false }).limit(1).single();
+        .select("position").eq("list_id", listId).order("position", { ascending: false }).limit(1).maybeSingle();
       await supabase.from("custom_list_items").insert({
         list_id: listId, media_type: mediaType, external_id: externalId,
         position: (last?.position ?? 0) + 1,

@@ -5,6 +5,7 @@ import { anilistAnime } from "@/lib/anilist/client";
 import type { MediaType, MediaStatus, Platform } from "@/types/database";
 import Link from "next/link";
 import Image from "next/image";
+import { UsersRound } from "lucide-react";
 
 type ActivityRow = {
   user_id: string;
@@ -32,7 +33,7 @@ export default async function FeedPage() {
   if (!followingIds.length) {
     return (
       <div className="max-w-xl mx-auto text-center py-20 text-muted-foreground">
-        <p className="text-4xl mb-4">👥</p>
+        <UsersRound size={48} className="mx-auto mb-4" style={{ color: "var(--gold)" }} />
         <p className="font-medium text-foreground mb-2">No sigues a nadie aún</p>
         <p className="text-sm">Busca usuarios y síguelos para ver su actividad aquí</p>
       </div>
@@ -84,7 +85,7 @@ export default async function FeedPage() {
               <div className="w-9 h-9 rounded-full bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center text-sm">
                 {profile.avatar_url
                   ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-                  : <span className="text-muted-foreground">👤</span>
+                  : <img src="/perfil2.jpg" alt="Usuario" className="w-full h-full object-cover rounded-full" />
                 }
               </div>
             </Link>

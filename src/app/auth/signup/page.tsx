@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { markInviteCodeUsed } from "./actions";
+import { validateInviteCode, signUpWithCode } from "./actions";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"code" | "account">("code");
   const [inviteCode, setInviteCode] = useState("");
   const [codeId, setCodeId] = useState<string | null>(null);
@@ -21,64 +18,33 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("invitation_codes")
-      .select("id")
-      .eq("code", inviteCode.trim().toUpperCase())
-      .is("used_by", null)
-      .gt("expires_at", new Date().toISOString())
-      .single();
-
-    if (error || !data) {
-      setError("Código inválido o ya utilizado");
+    try {
+      const result = await validateInviteCode(inviteCode);
+      if (!result.id) {
+        setError(result.error ?? "Código inválido o ya utilizado");
+        return;
+      }
+      setCodeId(result.id);
+      setStep("account");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setCodeId(data.id);
-    setStep("account");
-    setLoading(false);
   }
 
   async function createAccount(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const supabase = createClient();
-
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", username.trim().toLowerCase())
-      .single();
-
-    if (existing) {
-      setError("Ese nombre de usuario ya está en uso");
+    try {
+      const result = await signUpWithCode(email, password, username, codeId!);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      window.location.href = "/onboarding";
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username: username.trim().toLowerCase() },
-      },
-    });
-
-    if (signUpError || !authData.user) {
-      setError(signUpError?.message ?? "Error al crear la cuenta");
-      setLoading(false);
-      return;
-    }
-
-    await markInviteCodeUsed(codeId!, authData.user.id);
-
-    router.push("/onboarding");
-    router.refresh();
   }
 
   return (

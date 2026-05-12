@@ -1,7 +1,8 @@
-import { anilistAnime } from "@/lib/anilist/client";
+import { anilistAnime, translateGenre } from "@/lib/anilist/client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { WatchButton } from "@/components/media/WatchButton";
+import { WatchlistButton } from "@/components/media/WatchlistButton";
 import { ReviewSection } from "@/components/media/ReviewSection";
 import { AddToListButton } from "@/components/lists/AddToListButton";
 
@@ -46,7 +47,7 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
               </span>
             )}
             {anime.genres.slice(0, 4).map((g) => (
-              <span key={g} className="border border-border rounded px-2 py-0.5 text-xs">{g}</span>
+              <span key={g} className="border border-border rounded px-2 py-0.5 text-xs">{translateGenre(g)}</span>
             ))}
           </div>
 
@@ -56,6 +57,7 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
 
           <div className="mt-5 flex flex-wrap gap-2">
             <WatchButton mediaType="anime" externalId={animeId} title={anime.title.english ?? anime.title.romaji} />
+            <WatchlistButton mediaType="anime" externalId={animeId} title={anime.title.english ?? anime.title.romaji} />
             <AddToListButton mediaType="anime" externalId={animeId} />
           </div>
         </div>

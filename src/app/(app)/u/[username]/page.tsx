@@ -5,17 +5,18 @@ import { FollowButton } from "@/components/social/FollowButton";
 import { WatchlistTab } from "@/components/profile/WatchlistTab";
 import { StatsTab } from "@/components/profile/StatsTab";
 import { EditProfileButton } from "@/components/profile/EditProfileButton";
+import { LogoutButton } from "@/components/profile/LogoutButton";
 
 export default async function ProfilePage({
   params,
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ tab?: string; type?: string; status?: string; rating?: string; platform?: string; genre?: string; year?: string }>;
+  searchParams: Promise<{ tab?: string; type?: string; rating?: string; platform?: string; genre?: string; year?: string; sort?: string }>;
 }) {
   const [{ username }, sp] = await Promise.all([params, searchParams]);
   const tab = sp.tab ?? "watchlist";
-  const filters = { type: sp.type, status: sp.status, rating: sp.rating, platform: sp.platform, genre: sp.genre, year: sp.year };
+  const filters = { type: sp.type, rating: sp.rating, platform: sp.platform, genre: sp.genre, year: sp.year, sort: sp.sort };
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,67 +40,97 @@ export default async function ProfilePage({
       : Promise.resolve({ count: 0 }),
   ]);
 
-  const canSeeWatchlist = isOwn
+  const isFollowing = (isFollowingRes.count ?? 0) > 0;
+
+  const canSeeProfile = isOwn
+    || profile.privacy_profile === "public"
+    || (profile.privacy_profile === "followers" && isFollowing);
+
+  const canSeeWatchlist = canSeeProfile && (
+    isOwn
     || profile.privacy_watchlist === "public"
-    || (profile.privacy_watchlist === "followers" && (isFollowingRes.count ?? 0) > 0);
+    || (profile.privacy_watchlist === "followers" && isFollowing)
+  );
 
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-start gap-5 mb-8">
         <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
-          {profile.avatar_url
+          {profile.avatar_url && canSeeProfile
             ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-            : <span className="text-muted-foreground">👤</span>
+            : <div className="w-full h-full rounded-full" style={{ backgroundColor: "var(--gold)" }} />
           }
         </div>
         <div className="flex-1">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <h1 className="text-xl font-bold">{profile.display_name ?? profile.username}</h1>
-            <span className="text-muted-foreground text-sm">@{profile.username}</span>
-            {!isOwn && user && (
-              <FollowButton targetId={profile.id} initialFollowing={(isFollowingRes.count ?? 0) > 0} />
-            )}
-            {isOwn && (
-              <EditProfileButton profile={{ display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url }} />
-            )}
+            <div className="flex items-center gap-2 ml-auto">
+              {!isOwn && user && (
+                <FollowButton targetId={profile.id} initialFollowing={isFollowing} />
+              )}
+              {isOwn && (
+                <>
+                  <EditProfileButton profile={{ display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url }} />
+                  <LogoutButton />
+                </>
+              )}
+            </div>
           </div>
-          {profile.bio && <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>}
-          <div className="flex gap-5 mt-3 text-sm">
-            <span><strong>{watchedRes.count ?? 0}</strong> <span className="text-muted-foreground">vistos</span></span>
-            <span><strong>{pendingRes.count ?? 0}</strong> <span className="text-muted-foreground">pendientes</span></span>
-            <span><strong>{followersRes.count ?? 0}</strong> <span className="text-muted-foreground">seguidores</span></span>
-            <span><strong>{followingRes.count ?? 0}</strong> <span className="text-muted-foreground">siguiendo</span></span>
-          </div>
+          {canSeeProfile && profile.bio && <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>}
+          {canSeeProfile && (
+            <div className="flex gap-5 mt-3 text-sm">
+              <span><strong>{watchedRes.count ?? 0}</strong> <span className="text-muted-foreground">vistos</span></span>
+              <span><strong>{pendingRes.count ?? 0}</strong> <span className="text-muted-foreground">pendientes</span></span>
+              <span><strong>{followersRes.count ?? 0}</strong> <span className="text-muted-foreground">seguidores</span></span>
+              <span><strong>{followingRes.count ?? 0}</strong> <span className="text-muted-foreground">siguiendo</span></span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border mb-6">
-        {["watchlist", "stats"].map((t) => (
-          <Link
-            key={t}
-            href={`/u/${profile.username}?tab=${t}`}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t === "watchlist" ? "Watchlist" : "Estadísticas"}
-          </Link>
-        ))}
-      </div>
+      {!canSeeProfile ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-4xl mb-3">🔒</p>
+          <p>Este perfil es privado</p>
+        </div>
+      ) : (
+        <>
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-border mb-6">
+            {(["watchlist", "historial", "stats"] as const).map((t) => (
+              <Link
+                key={t}
+                href={`/u/${profile.username}?tab=${t}`}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  tab === t ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t === "watchlist" && <>Watchlist <span className="ml-1 text-xs text-muted-foreground font-normal">{pendingRes.count ?? 0}</span></>}
+                {t === "historial" && <>Historial <span className="ml-1 text-xs text-muted-foreground font-normal">{watchedRes.count ?? 0}</span></>}
+                {t === "stats" && "Estadísticas"}
+              </Link>
+            ))}
+          </div>
 
-      {tab === "stats"
-        ? <StatsTab userId={profile.id} />
-        : canSeeWatchlist
-          ? <WatchlistTab userId={profile.id} isOwn={isOwn} filters={filters} />
-          : (
-            <div className="text-center py-16 text-muted-foreground">
-              <p className="text-4xl mb-3">🔒</p>
-              <p>Esta watchlist es privada</p>
-            </div>
-          )
-      }
+          {tab === "stats"
+            ? <StatsTab userId={profile.id} />
+            : canSeeWatchlist
+              ? <WatchlistTab
+                  userId={profile.id}
+                  isOwn={isOwn}
+                  forcedStatus={tab === "watchlist" ? "pending" : "watched"}
+                  filters={filters}
+                />
+              : (
+                <div className="text-center py-16 text-muted-foreground">
+                  <p className="text-4xl mb-3">🔒</p>
+                  <p>Este historial es privado</p>
+                </div>
+              )
+          }
+        </>
+      )}
     </div>
   );
 }

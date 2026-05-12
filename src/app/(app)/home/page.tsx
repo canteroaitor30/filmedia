@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
-import { anilistAnime } from "@/lib/anilist/client";
 import { Carousel } from "@/components/media/Carousel";
 import type { UnifiedMedia } from "@/types/media";
 
-function toMovie(m: { id: number; title: string; original_title: string; overview: string; poster_path: string | null; backdrop_path?: string | null; release_date: string; vote_average: number; vote_count: number }): UnifiedMedia {
+function toMovie(m: { id: number; title: string; original_title: string; overview: string; poster_path: string | null; release_date: string; vote_average: number; vote_count: number }): UnifiedMedia {
   return {
     id: m.id, type: "movie",
     title: m.title, originalTitle: m.original_title,
@@ -15,7 +14,7 @@ function toMovie(m: { id: number; title: string; original_title: string; overvie
   };
 }
 
-function toSeries(s: { id: number; name: string; original_name: string; overview: string; poster_path: string | null; backdrop_path?: string | null; first_air_date: string; vote_average: number; vote_count: number }): UnifiedMedia {
+function toSeries(s: { id: number; name: string; original_name: string; overview: string; poster_path: string | null; first_air_date: string; vote_average: number; vote_count: number }): UnifiedMedia {
   return {
     id: s.id, type: "series",
     title: s.name, originalTitle: s.original_name,
@@ -26,130 +25,73 @@ function toSeries(s: { id: number; name: string; original_name: string; overview
   };
 }
 
-function toAnime(a: { id: number; title: { english: string | null; romaji: string; native: string }; description: string | null; coverImage: { large: string }; bannerImage: string | null; startDate: { year: number | null }; averageScore: number | null; genres: string[] }): UnifiedMedia {
-  return {
-    id: a.id, type: "anime",
-    title: a.title.english ?? a.title.romaji, originalTitle: a.title.native,
-    overview: a.description, posterUrl: a.coverImage.large,
-    backdropUrl: a.bannerImage, year: a.startDate.year,
-    score: a.averageScore, genres: a.genres,
-  };
-}
-
 export default async function HomePage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const [
-    { data: { user } },
-    topMovies, topSeries, topAnime,
-    actionMovies, dramaMovies,
-    dramaSeries, comedySeries, actionAnime,
-  ] = await Promise.all([
-    supabase.auth.getUser(),
-    tmdbMovies.topRated(),
-    tmdbSeries.topRated(),
-    anilistAnime.topRated(),
-    tmdbMovies.byGenre(28),
-    tmdbMovies.byGenre(18),
-    tmdbSeries.byGenre(18),
-    tmdbSeries.byGenre(35),
-    anilistAnime.byGenre("Action"),
+  if (!user) return null;
+
+  const { data: topRatedRes } = await supabase
+    .from("user_media")
+    .select("media_type, external_id, rating")
+    .eq("user_id", user.id)
+    .eq("status", "watched")
+    .gte("rating", 3)
+    .order("rating", { ascending: false })
+    .limit(20);
+
+  const topRated = (topRatedRes ?? []) as { media_type: string; external_id: number; rating: number }[];
+  const topUserMovies = topRated.filter((i) => i.media_type === "movie").slice(0, 3);
+  const topUserSeries = topRated.filter((i) => i.media_type === "series").slice(0, 3);
+
+  const [movieRecResults, seriesRecResults] = await Promise.all([
+    Promise.all(
+      topUserMovies.map(async (item) => {
+        const [recs, detail] = await Promise.all([
+          tmdbMovies.recommendations(item.external_id).catch(() => null),
+          tmdbMovies.detail(item.external_id).catch(() => null),
+        ]);
+        if (!recs?.results?.length || !detail) return null;
+        return { title: detail.title, items: recs.results.slice(0, 20).map(toMovie) };
+      })
+    ),
+    Promise.all(
+      topUserSeries.map(async (item) => {
+        const [recs, detail] = await Promise.all([
+          tmdbSeries.recommendations(item.external_id).catch(() => null),
+          tmdbSeries.detail(item.external_id).catch(() => null),
+        ]);
+        if (!recs?.results?.length || !detail) return null;
+        return { title: detail.name, items: recs.results.slice(0, 20).map(toSeries) };
+      })
+    ),
   ]);
 
-  // Carruseles personalizados
-  let recMovies: UnifiedMedia[] = [];
-  let recSeries: UnifiedMedia[] = [];
-  let friendsWatching: UnifiedMedia[] = [];
-  let recMovieTitle = "";
-  let recSeriesTitle = "";
+  const personalRecs: { title: string; items: UnifiedMedia[] }[] = [];
+  const movieRecs = movieRecResults.filter(Boolean) as { title: string; items: UnifiedMedia[] }[];
+  const seriesRecs = seriesRecResults.filter(Boolean) as { title: string; items: UnifiedMedia[] }[];
+  const maxRecs = Math.max(movieRecs.length, seriesRecs.length);
+  for (let i = 0; i < maxRecs && personalRecs.length < 4; i++) {
+    if (movieRecs[i]) personalRecs.push(movieRecs[i]);
+    if (seriesRecs[i] && personalRecs.length < 4) personalRecs.push(seriesRecs[i]);
+  }
 
-  if (user) {
-    const [topRatedRes, followsRes] = await Promise.all([
-      supabase.from("user_media")
-        .select("media_type, external_id, rating")
-        .eq("user_id", user.id)
-        .eq("status", "watched")
-        .gte("rating", 4)
-        .order("rating", { ascending: false })
-        .limit(10),
-      supabase.from("follows")
-        .select("following_id")
-        .eq("follower_id", user.id),
-    ]);
-
-    const topRated = (topRatedRes.data ?? []) as { media_type: string; external_id: number; rating: number }[];
-    const followingIds = (followsRes.data ?? []).map((f: { following_id: string }) => f.following_id);
-
-    const topMovie = topRated.find((i) => i.media_type === "movie");
-    const topSerie = topRated.find((i) => i.media_type === "series");
-
-    const [movieRecsRes, seriesRecsRes, friendsRes] = await Promise.all([
-      topMovie ? tmdbMovies.recommendations(topMovie.external_id).catch(() => null) : Promise.resolve(null),
-      topSerie ? tmdbSeries.recommendations(topSerie.external_id).catch(() => null) : Promise.resolve(null),
-      followingIds.length
-        ? supabase.from("user_media")
-            .select("media_type, external_id")
-            .in("user_id", followingIds)
-            .eq("status", "watched")
-            .order("updated_at", { ascending: false })
-            .limit(30)
-        : Promise.resolve({ data: [] }),
-    ]);
-
-    if (movieRecsRes?.results?.length && topMovie) {
-      const detail = await tmdbMovies.detail(topMovie.external_id).catch(() => null);
-      recMovieTitle = detail?.title ?? "";
-      recMovies = movieRecsRes.results.slice(0, 20).map(toMovie);
-    }
-
-    if (seriesRecsRes?.results?.length && topSerie) {
-      const detail = await tmdbSeries.detail(topSerie.external_id).catch(() => null);
-      recSeriesTitle = detail?.name ?? "";
-      recSeries = seriesRecsRes.results.slice(0, 20).map(toSeries);
-    }
-
-    const friendItems = (friendsRes.data ?? []) as { media_type: string; external_id: number }[];
-    const seen = new Set<string>();
-    const uniqueFriendItems = friendItems.filter((item) => {
-      const key = `${item.media_type}-${item.external_id}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).slice(0, 15);
-
-    if (uniqueFriendItems.length) {
-      const enriched = await Promise.all(
-        uniqueFriendItems.map(async (item) => {
-          try {
-            if (item.media_type === "movie") return toMovie(await tmdbMovies.detail(item.external_id));
-            if (item.media_type === "series") return toSeries(await tmdbSeries.detail(item.external_id));
-            return toAnime(await anilistAnime.detail(item.external_id));
-          } catch { return null; }
-        })
-      );
-      friendsWatching = enriched.filter(Boolean) as UnifiedMedia[];
-    }
+  if (!personalRecs.length) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-3">
+        <p className="text-lg font-medium">Aún no hay recomendaciones</p>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Puntúa películas y series que hayas visto para que podamos sugerirte contenido similar.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-10">
-      {friendsWatching.length > 0 && (
-        <Carousel title="Tus amigos están viendo" items={friendsWatching} />
-      )}
-      {recMovies.length > 0 && (
-        <Carousel title={recMovieTitle ? `Porque te gustó ${recMovieTitle}` : "Recomendado para ti"} items={recMovies} />
-      )}
-      {recSeries.length > 0 && (
-        <Carousel title={recSeriesTitle ? `Porque te gustó ${recSeriesTitle}` : "Series recomendadas"} items={recSeries} />
-      )}
-      <Carousel title="Películas mejor valoradas" items={topMovies.results.slice(0, 20).map(toMovie)} />
-      <Carousel title="Series mejor valoradas" items={topSeries.results.slice(0, 20).map(toSeries)} />
-      <Carousel title="Anime mejor valorado" items={topAnime.media.map(toAnime)} />
-      <Carousel title="Acción" items={actionMovies.results.slice(0, 20).map(toMovie)} />
-      <Carousel title="Drama" items={dramaMovies.results.slice(0, 20).map(toMovie)} />
-      <Carousel title="Series de drama" items={dramaSeries.results.slice(0, 20).map(toSeries)} />
-      <Carousel title="Comedias" items={comedySeries.results.slice(0, 20).map(toSeries)} />
-      <Carousel title="Anime de acción" items={actionAnime.media.map(toAnime)} />
+      {personalRecs.map((rec) => (
+        <Carousel key={rec.title} title={`Porque te gustó ${rec.title}`} items={rec.items} />
+      ))}
     </div>
   );
 }

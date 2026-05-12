@@ -18,27 +18,31 @@ export function CreateListButton() {
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase.from("custom_lists").insert({
-      user_id: user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      privacy,
-    }).select().single();
-    setSaving(false);
-    setOpen(false);
-    setTitle(""); setDescription(""); setPrivacy("private");
-    if (data) router.push(`/lists/${data.id}`);
-    else router.refresh();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase.from("custom_lists").insert({
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        privacy,
+      }).select().maybeSingle();
+      if (error) return;
+      setOpen(false);
+      setTitle(""); setDescription(""); setPrivacy("private");
+      if (data) router.push(`/lists/${data.id}`);
+      else router.refresh();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 rounded-md text-sm font-semibold"
-        style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}
+        className="px-4 py-2 rounded-md text-sm font-semibold border transition-colors hover:bg-[var(--gold)] hover:text-[#0A0A0A] hover:border-[var(--gold)]"
+        style={{ borderColor: "var(--gold)", color: "var(--gold)" }}
       >
         + Nueva lista
       </button>

@@ -1,30 +1,109 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
+import { ChevronDown, X } from "lucide-react";
+import { translateGenre } from "@/lib/anilist/client";
 
 interface Props {
   platforms: string[];
   genres: string[];
   decades: string[];
+  mode: "historial" | "watchlist";
   currentFilters: {
     type: string;
-    status: string;
     rating: string;
     platform: string;
     genre: string;
     year: string;
+    sort: string;
   };
 }
 
-export function WatchlistFilters({ platforms, genres, decades, currentFilters }: Props) {
+function GoldSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const active = !!value;
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-full pl-3 pr-2.5 h-8 text-xs border border-dashed transition-all"
+        style={{
+          borderColor: "var(--gold)",
+          color: "var(--gold)",
+          backgroundColor: "#0A0A0A",
+          borderStyle: active ? "solid" : "dashed",
+        }}
+      >
+        <span>{active ? selectedLabel : label}</span>
+        {active ? (
+          <X
+            width={11}
+            height={11}
+            className="flex-shrink-0 opacity-70 hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange("");
+              setOpen(false);
+            }}
+          />
+        ) : (
+          <ChevronDown width={11} height={11} className="flex-shrink-0 opacity-70" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 rounded-xl border border-border bg-[#0A0A0A] shadow-xl py-1 min-w-full">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-secondary transition-colors whitespace-nowrap"
+              style={opt.value === value ? { color: "var(--gold)" } : undefined}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function WatchlistFilters({ platforms, genres, decades, mode, currentFilters }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const update = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "all" || value === "") {
+    if (!value) {
       params.delete(key);
     } else {
       params.set(key, value);
@@ -32,107 +111,61 @@ export function WatchlistFilters({ platforms, genres, decades, currentFilters }:
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
-  const pill = (active: boolean) =>
-    `px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-      active
-        ? "text-[#0A0A0A]"
-        : "bg-secondary text-muted-foreground hover:text-foreground"
-    }`;
-
   return (
-    <div className="space-y-3 mb-6">
-      {/* Tipo */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-muted-foreground w-16">Tipo</span>
-        {[
-          { label: "Todo", value: "all" },
-          { label: "Películas", value: "movie" },
-          { label: "Series", value: "series" },
-          { label: "Anime", value: "anime" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => update("type", opt.value)}
-            className={pill(currentFilters.type === opt.value || (opt.value === "all" && !currentFilters.type))}
-            style={currentFilters.type === opt.value || (opt.value === "all" && !currentFilters.type)
-              ? { backgroundColor: "var(--gold)" } : {}}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-2 mb-6">
+      <GoldSelect
+        label="Tipo"
+        value={currentFilters.type}
+        onChange={(v) => update("type", v)}
+        options={[
+          { value: "movie", label: "Películas" },
+          { value: "series", label: "Series" },
+          { value: "anime", label: "Anime" },
+        ]}
+      />
 
-      {/* Estado */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-muted-foreground w-16">Estado</span>
-        {[
-          { label: "Todo", value: "all" },
-          { label: "Vistos", value: "watched" },
-          { label: "Pendientes", value: "pending" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => update("status", opt.value)}
-            className={pill(currentFilters.status === opt.value || (opt.value === "all" && !currentFilters.status))}
-            style={currentFilters.status === opt.value || (opt.value === "all" && !currentFilters.status)
-              ? { backgroundColor: "var(--gold)" } : {}}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Nota */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-muted-foreground w-16">Nota</span>
-        {[
-          { label: "Todas", value: "all" },
-          { label: "5★", value: "5" },
-          { label: "4★+", value: "4" },
-          { label: "3★+", value: "3" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => update("rating", opt.value)}
-            className={pill(currentFilters.rating === opt.value || (opt.value === "all" && !currentFilters.rating))}
-            style={currentFilters.rating === opt.value || (opt.value === "all" && !currentFilters.rating)
-              ? { backgroundColor: "var(--gold)" } : {}}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Plataforma */}
-      {platforms.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted-foreground w-16">Plataforma</span>
-          <button onClick={() => update("platform", "all")} className={pill(!currentFilters.platform)} style={!currentFilters.platform ? { backgroundColor: "var(--gold)" } : {}}>Todas</button>
-          {platforms.map((p) => (
-            <button key={p} onClick={() => update("platform", p)} className={pill(currentFilters.platform === p)} style={currentFilters.platform === p ? { backgroundColor: "var(--gold)" } : {}}>{p}</button>
-          ))}
-        </div>
+      {mode === "historial" && (
+        <GoldSelect
+          label="Valoración"
+          value={currentFilters.rating}
+          onChange={(v) => update("rating", v)}
+          options={[
+            { value: "5", label: "5★" },
+            { value: "4", label: "4★ o más" },
+            { value: "3", label: "3★ o más" },
+          ]}
+        />
       )}
 
-      {/* Género */}
       {genres.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted-foreground w-16">Género</span>
-          <button onClick={() => update("genre", "all")} className={pill(!currentFilters.genre)} style={!currentFilters.genre ? { backgroundColor: "var(--gold)" } : {}}>Todos</button>
-          {genres.map((g) => (
-            <button key={g} onClick={() => update("genre", g)} className={pill(currentFilters.genre === g)} style={currentFilters.genre === g ? { backgroundColor: "var(--gold)" } : {}}>{g}</button>
-          ))}
-        </div>
+        <GoldSelect
+          label="Género"
+          value={currentFilters.genre}
+          onChange={(v) => update("genre", v)}
+          options={genres.map((g) => ({ value: g, label: translateGenre(g) }))}
+        />
       )}
 
-      {/* Década */}
       {decades.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted-foreground w-16">Época</span>
-          <button onClick={() => update("year", "all")} className={pill(!currentFilters.year)} style={!currentFilters.year ? { backgroundColor: "var(--gold)" } : {}}>Todas</button>
-          {decades.map((d) => (
-            <button key={d} onClick={() => update("year", d)} className={pill(currentFilters.year === d)} style={currentFilters.year === d ? { backgroundColor: "var(--gold)" } : {}}>{d}s</button>
-          ))}
+        <GoldSelect
+          label="Década"
+          value={currentFilters.year}
+          onChange={(v) => update("year", v)}
+          options={decades.map((d) => ({ value: d, label: `Años ${d}s` }))}
+        />
+      )}
+
+      {mode === "historial" && (
+        <div className="ml-auto">
+          <GoldSelect
+            label="Orden"
+            value={currentFilters.sort}
+            onChange={(v) => update("sort", v)}
+            options={[
+              { value: "desc", label: "Mayor valoración" },
+              { value: "asc", label: "Menor valoración" },
+            ]}
+          />
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { anilistAnime, ANIME_GENRES } from "@/lib/anilist/client";
+import { anilistAnime, ANIME_GENRES, translateGenre } from "@/lib/anilist/client";
 import { Carousel } from "@/components/media/Carousel";
 import type { UnifiedMedia } from "@/types/media";
 import type { AnilistMedia } from "@/lib/anilist/client";
@@ -31,7 +31,7 @@ export default async function AnimePage() {
       {ANIME_GENRES.slice(0, 4).map((genre, i) => (
         <Carousel
           key={genre}
-          title={genre}
+          title={translateGenre(genre)}
           items={(genreResults[i]?.media ?? []).map(toUnified)}
         />
       ))}
