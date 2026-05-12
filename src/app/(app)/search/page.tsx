@@ -1,8 +1,10 @@
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
+import { createClient } from "@/lib/supabase/server";
 import { MediaCard } from "@/components/media/MediaCard";
 import type { UnifiedMedia } from "@/types/media";
-import { Search, X } from "lucide-react";
+import { Search, X, User } from "lucide-react";
+import Link from "next/link";
 
 interface Props {
   searchParams: Promise<{ q?: string; type?: string }>;
@@ -19,15 +21,23 @@ export default async function SearchPage({ searchParams }: Props) {
         </div>
         <div className="text-center">
           <p className="font-semibold text-foreground">Busca lo que quieres ver</p>
-          <p className="text-sm mt-1">Películas, series o anime</p>
+          <p className="text-sm mt-1">Películas, series, anime o usuarios</p>
         </div>
       </div>
     );
   }
 
   const results: UnifiedMedia[] = [];
+  const supabase = await createClient();
 
-  await Promise.all([
+  const [usersRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url")
+      .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .neq("username", "system")
+      .limit(5),
+
     (type === "all" || type === "movie") &&
       tmdbMovies.search(q).then((r) =>
         results.push(...r.results.slice(0, 20).map((m) => ({
@@ -64,6 +74,7 @@ export default async function SearchPage({ searchParams }: Props) {
       ).catch(() => {}),
   ]);
 
+  const users = usersRes.data ?? [];
   const typeLabels = { all: "Todo", movie: "Películas", series: "Series", anime: "Anime" };
 
   return (
@@ -75,7 +86,7 @@ export default async function SearchPage({ searchParams }: Props) {
             Resultados para{" "}
             <span className="font-bold" style={{ color: "var(--gold)" }}>&ldquo;{q}&rdquo;</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{results.length} resultado{results.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{results.length + users.length} resultado{results.length + users.length !== 1 ? "s" : ""}</p>
         </div>
         <a
           href="/home"
@@ -85,6 +96,33 @@ export default async function SearchPage({ searchParams }: Props) {
           Cancelar
         </a>
       </div>
+
+      {/* Users */}
+      {users.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Usuarios</p>
+          <div className="flex flex-col gap-1">
+            {users.map((u) => (
+              <Link
+                key={u.id}
+                href={`/u/${u.username}`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden ring-1 ring-white/10">
+                  {u.avatar_url
+                    ? <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover" />
+                    : <User size={16} className="text-muted-foreground" />
+                  }
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{u.display_name ?? u.username}</p>
+                  <p className="text-xs text-muted-foreground">@{u.username}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Type filter pills */}
       <div className="flex gap-2 flex-wrap">
@@ -102,19 +140,19 @@ export default async function SearchPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {results.length === 0 ? (
+      {results.length === 0 && users.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Search size={32} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium text-foreground">Sin resultados</p>
           <p className="text-sm mt-1">Prueba con otro término de búsqueda</p>
         </div>
-      ) : (
+      ) : results.length > 0 ? (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
           {results.map((item) => (
             <MediaCard key={`${item.type}-${item.id}`} media={item} />
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
