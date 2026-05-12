@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { validateInviteCode, signUpWithCode } from "./actions";
 
-export default function SignupPage() {
+function SignupForm() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<"code" | "account">("code");
   const [inviteCode, setInviteCode] = useState(searchParams.get("code") ?? "");
@@ -156,5 +156,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }
