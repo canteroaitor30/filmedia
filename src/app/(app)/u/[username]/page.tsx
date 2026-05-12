@@ -6,7 +6,10 @@ import { WatchlistTab } from "@/components/profile/WatchlistTab";
 import { StatsTab } from "@/components/profile/StatsTab";
 import { EditProfileButton } from "@/components/profile/EditProfileButton";
 import { LogoutButton } from "@/components/profile/LogoutButton";
+import { InviteForm } from "@/components/admin/InviteForm";
 import { Lock } from "lucide-react";
+
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
 
 export default async function ProfilePage({
   params,
@@ -30,8 +33,9 @@ export default async function ProfilePage({
   if (!profile) notFound();
 
   const isOwn = user?.id === profile.id;
+  const isAdmin = user?.id === ADMIN_USER_ID;
 
-  const [followersRes, followingRes, watchedRes, pendingRes, isFollowingRes] = await Promise.all([
+  const [followersRes, followingRes, watchedRes, pendingRes, isFollowingRes, availableCodesRes] = await Promise.all([
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profile.id),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
     supabase.from("user_media").select("*", { count: "exact", head: true }).eq("user_id", profile.id).eq("status", "watched"),
@@ -39,9 +43,13 @@ export default async function ProfilePage({
     user && !isOwn
       ? supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", user.id).eq("following_id", profile.id)
       : Promise.resolve({ count: 0 }),
+    isAdmin && isOwn
+      ? supabase.from("invitation_codes").select("*", { count: "exact", head: true }).is("used_by", null).is("used_at", null)
+      : Promise.resolve({ count: 0 }),
   ]);
 
   const isFollowing = (isFollowingRes.count ?? 0) > 0;
+  const availableCodes = availableCodesRes.count ?? 0;
 
   const canSeeProfile = isOwn
     || profile.privacy_profile === "public"
@@ -94,6 +102,10 @@ export default async function ProfilePage({
           )}
         </div>
       </div>
+
+      {isAdmin && isOwn && (
+        <InviteForm availableCodes={availableCodes} />
+      )}
 
       {!canSeeProfile ? (
         <div className="text-center py-20 text-muted-foreground">
