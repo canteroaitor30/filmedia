@@ -66,7 +66,7 @@ export default async function ProfilePage({
       {/* Header */}
       <div className="flex items-start gap-5 mb-8 pb-8 border-b border-border/50">
         <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden ring-1 ring-white/10">
-          {profile.avatar_url && canSeeProfile
+          {profile.avatar_url
             ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
             : <div className="w-full h-full rounded-2xl" style={{ backgroundColor: "var(--gold)" }} />
           }
