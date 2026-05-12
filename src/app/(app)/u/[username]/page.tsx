@@ -83,7 +83,7 @@ export default async function ProfilePage({
               )}
               {isOwn && (
                 <>
-                  <EditProfileButton profile={{ display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url }} />
+                  <EditProfileButton profile={{ display_name: profile.display_name, bio: profile.bio, avatar_url: profile.avatar_url, privacy_profile: profile.privacy_profile, privacy_watchlist: profile.privacy_watchlist }} />
                   <LogoutButton />
                 </>
               )}
