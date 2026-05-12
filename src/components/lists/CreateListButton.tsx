@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PrivacyLevel } from "@/types/database";
+import { Plus, X, Globe, Users, Lock } from "lucide-react";
 
 export function CreateListButton() {
   const [open, setOpen] = useState(false);
@@ -37,49 +38,90 @@ export function CreateListButton() {
     }
   }
 
+  const PRIVACY_OPTIONS: { value: PrivacyLevel; label: string; icon: React.ReactNode }[] = [
+    { value: "private", label: "Solo yo", icon: <Lock size={12} /> },
+    { value: "followers", label: "Seguidores", icon: <Users size={12} /> },
+    { value: "public", label: "Público", icon: <Globe size={12} /> },
+  ];
+
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 rounded-md text-sm font-semibold border transition-colors hover:bg-[var(--gold)] hover:text-[#0A0A0A] hover:border-[var(--gold)]"
-        style={{ borderColor: "var(--gold)", color: "var(--gold)" }}
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:brightness-110 active:scale-[0.97]"
+        style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}
       >
-        + Nueva lista
+        <Plus size={14} strokeWidth={2.5} />
+        Nueva lista
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(false)}>
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold mb-4">Nueva lista</h3>
-            <form onSubmit={create} className="space-y-3">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nombre de la lista"
-                required
-                className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
-              />
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descripción (opcional)"
-                rows={2}
-                className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring resize-none"
-              />
-              <select
-                value={privacy}
-                onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)}
-                className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm"
-              >
-                <option value="private">🔒 Solo yo</option>
-                <option value="followers">👥 Seguidores</option>
-                <option value="public">🌍 Público</option>
-              </select>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setOpen(false)}>
+          <div className="bg-card border border-border/60 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold text-base">Nueva lista</h3>
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={create} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Nombre</label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Mi lista de favoritos"
+                  required
+                  className="w-full rounded-lg border border-border/60 bg-secondary/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-[var(--gold)]/60 focus:ring-1 focus:ring-[var(--gold)]/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Descripción (opcional)</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe tu lista..."
+                  rows={2}
+                  className="w-full rounded-lg border border-border/60 bg-secondary/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-[var(--gold)]/60 focus:ring-1 focus:ring-[var(--gold)]/30 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Privacidad</label>
+                <div className="flex gap-2">
+                  {PRIVACY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setPrivacy(opt.value)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium border transition-all"
+                      style={privacy === opt.value
+                        ? { borderColor: "var(--gold)", color: "var(--gold)", backgroundColor: "color-mix(in srgb, var(--gold) 8%, transparent)" }
+                        : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={saving || !title.trim()} className="flex-1 py-2 rounded-md text-sm font-semibold disabled:opacity-50" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
-                  {saving ? "Creando..." : "Crear"}
+                <button
+                  type="submit"
+                  disabled={saving || !title.trim()}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all hover:brightness-110 active:scale-[0.98]"
+                  style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}
+                >
+                  {saving ? "Creando..." : "Crear lista"}
                 </button>
-                <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 rounded-md text-sm border border-border text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="px-4 py-2.5 rounded-lg text-sm border border-border/60 text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Cancelar
                 </button>
               </div>

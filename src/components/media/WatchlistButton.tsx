@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveWatchEntry, deleteWatchEntry } from "@/app/actions/watch";
 import type { MediaType } from "@/types/database";
+import { BookmarkPlus, BookmarkCheck } from "lucide-react";
 
 interface Props {
   mediaType: MediaType;
@@ -55,18 +56,21 @@ export function WatchlistButton({ mediaType, externalId, title }: Props) {
     setSaving(false);
   }
 
-  if (loading) return <div className="h-9 w-28 rounded-md bg-secondary animate-pulse" />;
+  if (loading) return <div className="h-9 w-32 rounded-lg bg-secondary animate-pulse" />;
 
   return (
     <button
       onClick={toggle}
       disabled={saving}
-      className="rounded-md px-4 py-2 text-sm font-semibold border transition-colors disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold border transition-all disabled:opacity-50 hover:brightness-105 active:scale-[0.97]"
       style={isPending
         ? { backgroundColor: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)" }
         : { borderColor: "var(--gold)", color: "var(--gold)", backgroundColor: "transparent" }}
     >
-      {isPending ? "✓ Watchlist" : "+ Watchlist"}
+      {isPending
+        ? <><BookmarkCheck size={14} /> Watchlist</>
+        : <><BookmarkPlus size={14} /> Watchlist</>
+      }
     </button>
   );
 }

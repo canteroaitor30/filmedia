@@ -2,6 +2,7 @@ import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
 import { MediaCard } from "@/components/media/MediaCard";
 import type { UnifiedMedia } from "@/types/media";
+import { Search, X } from "lucide-react";
 
 interface Props {
   searchParams: Promise<{ q?: string; type?: string }>;
@@ -12,9 +13,14 @@ export default async function SearchPage({ searchParams }: Props) {
 
   if (!q.trim()) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-muted-foreground">
-        <p className="text-4xl mb-4">🔍</p>
-        <p>Busca películas, series o anime</p>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-muted-foreground gap-4">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--gold) 10%, transparent)" }}>
+          <Search size={28} style={{ color: "var(--gold)" }} />
+        </div>
+        <div className="text-center">
+          <p className="font-semibold text-foreground">Busca lo que quieres ver</p>
+          <p className="text-sm mt-1">Películas, series o anime</p>
+        </div>
       </div>
     );
   }
@@ -62,28 +68,31 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          Resultados para <span style={{ color: "var(--gold)" }}>"{q}"</span>
-        </h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{results.length} resultados</span>
-          <a
-            href="/home"
-            className="text-sm px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ✕ Cancelar
-          </a>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 pb-4 border-b border-border/50">
+        <div>
+          <h1 className="text-xl font-semibold leading-tight">
+            Resultados para{" "}
+            <span className="font-bold" style={{ color: "var(--gold)" }}>&ldquo;{q}&rdquo;</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{results.length} resultado{results.length !== 1 ? "s" : ""}</p>
         </div>
+        <a
+          href="/home"
+          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-colors flex-shrink-0"
+        >
+          <X size={12} />
+          Cancelar
+        </a>
       </div>
 
-      {/* Filtro tipo */}
-      <div className="flex gap-2">
+      {/* Type filter pills */}
+      <div className="flex gap-2 flex-wrap">
         {(["all", "movie", "series", "anime"] as const).map((t) => (
           <a
             key={t}
             href={`/search?q=${encodeURIComponent(q)}&type=${t}`}
-            className="px-3 py-1.5 rounded-full text-sm border transition-colors"
+            className="px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all hover:scale-[1.02] active:scale-[0.98]"
             style={type === t
               ? { backgroundColor: "var(--gold)", color: "#0A0A0A", borderColor: "var(--gold)" }
               : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}
@@ -94,7 +103,11 @@ export default async function SearchPage({ searchParams }: Props) {
       </div>
 
       {results.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center">No se encontraron resultados</p>
+        <div className="text-center py-16 text-muted-foreground">
+          <Search size={32} className="mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-foreground">Sin resultados</p>
+          <p className="text-sm mt-1">Prueba con otro término de búsqueda</p>
+        </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
           {results.map((item) => (

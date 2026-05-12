@@ -31,8 +31,11 @@ export default async function SeriesPage() {
   ]);
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-2xl font-bold">Series</h1>
+    <div className="space-y-12">
+      <div className="pb-2 border-b border-border/50">
+        <h1 className="text-3xl font-bold tracking-tight">Series</h1>
+        <p className="text-sm text-muted-foreground mt-1">Las mejores series de televisión</p>
+      </div>
       <Carousel title="Mejor valoradas" items={topRated.results.slice(0, 20).map(toUnified)} />
       {SERIES_GENRES.map((genre, i) => (
         <Carousel

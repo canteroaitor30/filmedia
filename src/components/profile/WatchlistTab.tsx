@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
 import { WatchlistFilters } from "./WatchlistFilters";
+import { Film } from "lucide-react";
 
 interface Props {
   userId: string;
@@ -119,8 +120,12 @@ export async function WatchlistTab({ userId, isOwn, forcedStatus, filters = {} }
       <div>
         {filterBar}
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-4xl mb-3">🎬</p>
-          <p>{isOwn ? "Nada que mostrar con estos filtros" : "Sin contenido aún"}</p>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3" style={{ backgroundColor: "color-mix(in srgb, var(--gold) 10%, transparent)" }}>
+            <Film size={20} style={{ color: "var(--gold)" }} />
+          </div>
+          <p className="font-medium text-foreground text-sm">
+            {isOwn ? "Nada que mostrar con estos filtros" : "Sin contenido aún"}
+          </p>
         </div>
       </div>
     );
@@ -155,13 +160,20 @@ export async function WatchlistTab({ userId, isOwn, forcedStatus, filters = {} }
       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
         {valid.map((item) => (
           <Link key={`${item.media_type}-${item.external_id}`} href={item.href} className="group">
-            <div className="aspect-[2/3] rounded overflow-hidden bg-secondary relative">
+            <div className="aspect-[2/3] rounded-lg overflow-hidden bg-secondary relative shadow-sm">
               {item.poster
-                ? <Image src={item.poster} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="120px" />
+                ? <Image
+                    src={item.poster}
+                    alt={item.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="120px"
+                  />
                 : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-1 text-center">{item.title}</div>
               }
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               {item.rating && (
-                <div className="absolute bottom-1 right-1 text-xs font-bold rounded px-1" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
+                <div className="absolute bottom-1 right-1 text-xs font-bold rounded-md px-1 py-0.5 shadow" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
                   {item.rating}★
                 </div>
               )}

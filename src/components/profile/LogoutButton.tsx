@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 export function LogoutButton() {
   const [confirming, setConfirming] = useState(false);
@@ -21,7 +22,7 @@ export function LogoutButton() {
         <span className="text-sm text-muted-foreground">¿Seguro?</span>
         <button
           onClick={handleLogout}
-          className="text-sm font-medium text-destructive hover:underline transition-colors"
+          className="text-sm font-semibold text-destructive hover:underline transition-colors"
         >
           Sí
         </button>
@@ -38,8 +39,9 @@ export function LogoutButton() {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-border transition-colors"
     >
+      <LogOut size={13} />
       Cerrar sesión
     </button>
   );

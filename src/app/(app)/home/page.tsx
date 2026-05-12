@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
 import { Carousel } from "@/components/media/Carousel";
 import type { UnifiedMedia } from "@/types/media";
+import { Sparkles } from "lucide-react";
 
 function toMovie(m: { id: number; title: string; original_title: string; overview: string; poster_path: string | null; release_date: string; vote_average: number; vote_count: number }): UnifiedMedia {
   return {
@@ -78,11 +79,16 @@ export default async function HomePage() {
 
   if (!personalRecs.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-3">
-        <p className="text-lg font-medium">Aún no hay recomendaciones</p>
-        <p className="text-sm text-muted-foreground max-w-xs">
-          Puntúa películas y series que hayas visto para que podamos sugerirte contenido similar.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--gold) 12%, transparent)" }}>
+          <Sparkles size={28} style={{ color: "var(--gold)" }} />
+        </div>
+        <div>
+          <p className="text-lg font-semibold">Aún no hay recomendaciones</p>
+          <p className="text-sm text-muted-foreground max-w-xs mt-1.5">
+            Puntúa películas y series que hayas visto para que podamos sugerirte contenido similar.
+          </p>
+        </div>
       </div>
     );
   }

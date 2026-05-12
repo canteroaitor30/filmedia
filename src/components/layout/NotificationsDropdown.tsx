@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { fetchNotifications, type NotifItem } from "@/app/actions/notifications";
+import { Bell } from "lucide-react";
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime();
@@ -67,23 +68,20 @@ export function NotificationsDropdown({ unreadCount }: { unreadCount?: number })
     <div ref={ref} className="relative">
       <button
         onClick={handleOpen}
-        className="relative flex items-center text-muted-foreground hover:text-foreground transition-colors"
+        className="relative flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
         aria-label="Notificaciones"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
+        <Bell size={16} />
         {badge > 0 && (
-          <span className="absolute -top-1 -right-1 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
+          <span className="absolute -top-0.5 -right-0.5 text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full" style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-8 w-80 rounded-xl border border-border bg-background shadow-xl z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
+        <div className="absolute right-0 top-10 w-80 rounded-xl border border-border/60 bg-background/95 backdrop-blur-md shadow-2xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/50">
             <p className="text-sm font-semibold">Notificaciones</p>
           </div>
 
@@ -93,7 +91,7 @@ export function NotificationsDropdown({ unreadCount }: { unreadCount?: number })
             </div>
           ) : !notifs?.length ? (
             <div className="text-center py-10 text-muted-foreground">
-              <p className="text-2xl mb-2">🔔</p>
+              <Bell size={24} className="mx-auto mb-2.5 opacity-30" />
               <p className="text-sm">Sin notificaciones</p>
             </div>
           ) : (
@@ -103,7 +101,7 @@ export function NotificationsDropdown({ unreadCount }: { unreadCount?: number })
                   key={n.id}
                   href={notifHref(n)}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/60 ${!n.read ? "bg-secondary/40" : ""}`}
+                  className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50 ${!n.read ? "bg-secondary/30" : ""}`}
                 >
                   <div className="w-8 h-8 rounded-full bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center text-xs font-semibold">
                     {n.actorAvatar

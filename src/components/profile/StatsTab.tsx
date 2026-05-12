@@ -1,17 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
+import { BarChart3 } from "lucide-react";
 
 interface Props { userId: string }
 
 function Bar({ label, value, max, suffix = "" }: { label: string; value: number; max: number; suffix?: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-muted-foreground w-24 flex-shrink-0 truncate">{label}</span>
-      <div className="flex-1 bg-secondary rounded-full h-2 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: "var(--gold)" }} />
+    <div className="flex items-center gap-3 group">
+      <span className="text-xs text-muted-foreground w-28 flex-shrink-0 truncate group-hover:text-foreground transition-colors">{label}</span>
+      <div className="flex-1 bg-secondary/60 rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, backgroundColor: "var(--gold)", opacity: pct > 0 ? 1 : 0.15 }}
+        />
       </div>
-      <span className="text-xs tabular-nums w-10 text-right">{value}{suffix}</span>
+      <span className="text-xs tabular-nums w-8 text-right text-muted-foreground">{value}{suffix}</span>
     </div>
+  );
+}
+
+function SectionTitle({ label }: { label: string }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">{label}</h3>
   );
 }
 
@@ -88,30 +98,43 @@ export async function StatsTab({ userId }: Props) {
 
   const avgRating = rated.length ? (rated.reduce((s, i) => s + (i.rating ?? 0), 0) / rated.length).toFixed(1) : null;
 
+  if (watched.length === 0) {
+    return (
+      <div className="text-center py-20 text-muted-foreground">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4" style={{ backgroundColor: "color-mix(in srgb, var(--gold) 10%, transparent)" }}>
+          <BarChart3 size={24} style={{ color: "var(--gold)" }} />
+        </div>
+        <p className="font-semibold text-foreground">Aún no hay estadísticas</p>
+        <p className="text-sm mt-1">Marca contenido como visto para ver tus datos</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Header cards */}
+      {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Vistos", value: watched.length },
-          { label: "Pendientes", value: pending.length },
-          { label: "Nota media", value: avgRating ?? "—" },
-          { label: "Horas (estimado)", value: totalHours > 0 ? `${totalHours}h` : "—" },
+          { label: "Vistos", value: watched.length, sub: "títulos" },
+          { label: "Pendientes", value: pending.length, sub: "en lista" },
+          { label: "Nota media", value: avgRating ?? "—", sub: "sobre 5" },
+          { label: "Horas vistas", value: totalHours > 0 ? totalHours : "—", sub: "estimado" },
         ].map((card) => (
-          <div key={card.label} className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold">{card.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
+          <div key={card.label} className="bg-card/50 border border-border/60 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold tabular-nums tracking-tight" style={{ color: "var(--gold)" }}>{card.value}</p>
+            <p className="text-xs font-semibold mt-1">{card.label}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{card.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Rating distribution */}
       {rated.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Distribución de notas</h3>
-          <div className="space-y-1.5">
+        <section className="bg-card/30 border border-border/40 rounded-xl p-4">
+          <SectionTitle label="Distribución de notas" />
+          <div className="space-y-2">
             {[5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((r) => (
-              <Bar key={r} label={`${r}★`} value={ratingBuckets[String(r)]} max={maxRating} />
+              <Bar key={r} label={`${r} ★`} value={ratingBuckets[String(r)]} max={maxRating} />
             ))}
           </div>
         </section>
@@ -119,9 +142,9 @@ export async function StatsTab({ userId }: Props) {
 
       {/* By type */}
       {watched.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Por tipo</h3>
-          <div className="space-y-1.5">
+        <section className="bg-card/30 border border-border/40 rounded-xl p-4">
+          <SectionTitle label="Por tipo" />
+          <div className="space-y-2">
             <Bar label="Películas" value={byType.movie} max={maxType} />
             <Bar label="Series" value={byType.series} max={maxType} />
             <Bar label="Anime" value={byType.anime} max={maxType} />
@@ -131,9 +154,9 @@ export async function StatsTab({ userId }: Props) {
 
       {/* Top genres */}
       {topGenres.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Géneros favoritos</h3>
-          <div className="space-y-1.5">
+        <section className="bg-card/30 border border-border/40 rounded-xl p-4">
+          <SectionTitle label="Géneros favoritos" />
+          <div className="space-y-2">
             {topGenres.map(([genre, count]) => (
               <Bar key={genre} label={genre} value={count} max={maxGenre} />
             ))}
@@ -143,9 +166,9 @@ export async function StatsTab({ userId }: Props) {
 
       {/* By platform */}
       {sortedPlatforms.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Por plataforma</h3>
-          <div className="space-y-1.5">
+        <section className="bg-card/30 border border-border/40 rounded-xl p-4">
+          <SectionTitle label="Por plataforma" />
+          <div className="space-y-2">
             {sortedPlatforms.map(([p, count]) => (
               <Bar key={p} label={p} value={count} max={maxPlatform} />
             ))}
@@ -155,28 +178,28 @@ export async function StatsTab({ userId }: Props) {
 
       {/* Monthly activity */}
       {items.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Actividad mensual</h3>
+        <section className="bg-card/30 border border-border/40 rounded-xl p-4">
+          <SectionTitle label="Actividad mensual" />
           <div className="flex items-end gap-1 h-20">
             {months.map((m) => {
               const count = monthlyCounts[m.key] ?? 0;
               const height = maxMonthly > 0 ? Math.max((count / maxMonthly) * 100, count > 0 ? 8 : 0) : 0;
               return (
                 <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full rounded-sm transition-all" style={{ height: `${height}%`, backgroundColor: "var(--gold)", opacity: count > 0 ? 1 : 0.15 }} />
-                  <span className="text-[9px] text-muted-foreground">{m.label}</span>
+                  <div
+                    className="w-full rounded-sm transition-all duration-500"
+                    style={{
+                      height: `${height}%`,
+                      backgroundColor: "var(--gold)",
+                      opacity: count > 0 ? 1 : 0.1,
+                    }}
+                  />
+                  <span className="text-[9px] text-muted-foreground/70">{m.label}</span>
                 </div>
               );
             })}
           </div>
         </section>
-      )}
-
-      {watched.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-4xl mb-3">📊</p>
-          <p>Aún no hay datos suficientes para mostrar estadísticas.</p>
-        </div>
       )}
     </div>
   );

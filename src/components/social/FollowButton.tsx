@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { UserPlus, UserCheck } from "lucide-react";
 
 interface Props {
   targetId: string;
@@ -39,13 +40,16 @@ export function FollowButton({ targetId, initialFollowing }: Props) {
     <button
       onClick={toggle}
       disabled={loading}
-      className="px-4 py-1.5 rounded-full text-sm font-medium border transition-colors disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50 hover:brightness-105 active:scale-[0.97]"
       style={following
         ? { borderColor: "var(--border)", color: "var(--muted-foreground)" }
         : { backgroundColor: "var(--gold)", color: "#0A0A0A", borderColor: "var(--gold)" }
       }
     >
-      {following ? "Siguiendo" : "Seguir"}
+      {following
+        ? <><UserCheck size={13} /> Siguiendo</>
+        : <><UserPlus size={13} /> Seguir</>
+      }
     </button>
   );
 }

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { MediaCard } from "./MediaCard";
 import type { UnifiedMedia } from "@/types/media";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   title: string;
@@ -21,7 +22,7 @@ export function Carousel({ title, items }: Props) {
 
   return (
     <section>
-      <h2 className="text-base font-semibold mb-3 px-1">{title}</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-1">{title}</h2>
       <div className="relative group/carousel">
         <div ref={ref} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
           {items.map((item) => (
@@ -29,24 +30,28 @@ export function Carousel({ title, items }: Props) {
           ))}
         </div>
 
-        {/* Flecha izquierda */}
+        {/* Left arrow */}
         <button
           onClick={() => scroll("left")}
           aria-label="Anterior"
-          className="absolute left-0 top-0 bottom-3 w-16 flex items-center justify-start pl-1 opacity-0 group-hover/carousel:opacity-100 transition-opacity"
-          style={{ background: "linear-gradient(to right, rgba(10,10,10,0.85) 0%, transparent 100%)" }}
+          className="absolute left-0 top-0 bottom-3 w-14 flex items-center justify-start pl-1 opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          style={{ background: "linear-gradient(to right, rgba(10,10,10,0.9) 0%, transparent 100%)" }}
         >
-          <span className="text-2xl text-white drop-shadow">‹</span>
+          <span className="w-7 h-7 flex items-center justify-center rounded-full bg-background/80 border border-border/60 text-foreground shadow">
+            <ChevronLeft size={14} />
+          </span>
         </button>
 
-        {/* Flecha derecha */}
+        {/* Right arrow */}
         <button
           onClick={() => scroll("right")}
           aria-label="Siguiente"
-          className="absolute right-0 top-0 bottom-3 w-16 flex items-center justify-end pr-1 opacity-0 group-hover/carousel:opacity-100 transition-opacity"
-          style={{ background: "linear-gradient(to left, rgba(10,10,10,0.85) 0%, transparent 100%)" }}
+          className="absolute right-0 top-0 bottom-3 w-14 flex items-center justify-end pr-1 opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          style={{ background: "linear-gradient(to left, rgba(10,10,10,0.9) 0%, transparent 100%)" }}
         >
-          <span className="text-2xl text-white drop-shadow">›</span>
+          <span className="w-7 h-7 flex items-center justify-center rounded-full bg-background/80 border border-border/60 text-foreground shadow">
+            <ChevronRight size={14} />
+          </span>
         </button>
       </div>
     </section>

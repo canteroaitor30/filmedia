@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveWatchEntry, deleteWatchEntry } from "@/app/actions/watch";
 import type { MediaType, Platform } from "@/types/database";
+import { Eye, Star } from "lucide-react";
 
 const PLATFORMS: Platform[] = [
   "Netflix", "HBO Max", "Prime", "Disney+", "Apple TV+",
@@ -80,58 +81,69 @@ export function WatchButton({ mediaType, externalId, title }: Props) {
     setSaving(false);
   }
 
-  if (loading) return <div className="h-9 w-24 rounded-md bg-secondary animate-pulse" />;
-
-  const label = isWatched
-    ? currentRating ? `${currentRating}★` : "Visto"
-    : "Valorar";
+  if (loading) return <div className="h-9 w-28 rounded-lg bg-secondary animate-pulse" />;
 
   return (
     <>
       <button
         onClick={() => { setRating(currentRating); setPlatform(currentPlatform); setShowModal(true); }}
-        className="rounded-md px-4 py-2 text-sm font-semibold transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all hover:brightness-110 active:scale-[0.97]"
         style={isWatched
           ? { backgroundColor: "var(--secondary)", color: "var(--foreground)", border: "1px solid var(--border)" }
           : { backgroundColor: "var(--gold)", color: "#0A0A0A" }}
       >
-        {label}
+        {isWatched
+          ? (
+            <>
+              <Eye size={14} />
+              {currentRating ? `${currentRating}★` : "Visto"}
+            </>
+          )
+          : (
+            <>
+              <Eye size={14} />
+              Valorar
+            </>
+          )
+        }
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold mb-4 truncate">{title}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-card border border-border/60 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold mb-1 truncate">{title}</h3>
+            <p className="text-xs text-muted-foreground mb-5">Registra tu valoración</p>
 
-            <p className="text-xs text-muted-foreground mb-2">Nota (opcional)</p>
-            <div className="flex gap-1 mb-5 flex-wrap">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Nota (opcional)</p>
+            <div className="flex gap-1.5 mb-5 flex-wrap">
               {[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((r) => (
                 <button key={r} onClick={() => setRating(rating === r ? null : r)}
-                  className="px-2 py-1 rounded text-xs border transition-colors"
+                  className="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-xs font-medium border transition-all hover:scale-105 active:scale-95"
                   style={rating === r
                     ? { backgroundColor: "var(--gold)", color: "#0A0A0A", borderColor: "var(--gold)" }
                     : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
-                  {r}★
+                  <Star size={9} strokeWidth={rating === r ? 3 : 2} />
+                  {r}
                 </button>
               ))}
             </div>
 
-            <p className="text-xs text-muted-foreground mb-2">Plataforma (opcional)</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Plataforma (opcional)</p>
             <select value={platform ?? ""} onChange={(e) => setPlatform(e.target.value as Platform || null)}
-              className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm mb-5">
+              className="w-full rounded-lg border border-border/60 bg-secondary/60 px-3 py-2 text-sm mb-5 outline-none focus:border-[var(--gold)]/60 transition-colors">
               <option value="">— Sin especificar —</option>
               {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
 
             <div className="flex gap-2">
               <button onClick={save} disabled={saving}
-                className="flex-1 py-2 rounded-md text-sm font-semibold disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all hover:brightness-110 active:scale-[0.98]"
                 style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}>
                 {saving ? "Guardando..." : "Guardar"}
               </button>
               {entryId && (
                 <button onClick={remove} disabled={saving}
-                  className="px-4 py-2 rounded-md text-sm border border-border text-muted-foreground hover:text-destructive hover:border-destructive transition-colors">
+                  className="px-4 py-2.5 rounded-lg text-sm border border-border/60 text-muted-foreground hover:text-destructive hover:border-destructive transition-colors">
                   Eliminar
                 </button>
               )}

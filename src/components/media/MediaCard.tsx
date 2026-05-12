@@ -12,7 +12,7 @@ export function MediaCard({ media, showScore = true }: Props) {
 
   return (
     <Link href={href} className="group flex-shrink-0 w-36 md:w-40">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-secondary">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-secondary shadow-md">
         {media.posterUrl ? (
           <Image
             src={media.posterUrl}
@@ -26,16 +26,18 @@ export function MediaCard({ media, showScore = true }: Props) {
             {media.title}
           </div>
         )}
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300" />
         {showScore && media.score != null && (
           <div
-            className="absolute bottom-2 right-2 rounded px-1.5 py-0.5 text-xs font-bold"
+            className="absolute bottom-2 right-2 rounded-lg px-1.5 py-0.5 text-xs font-bold shadow"
             style={{ backgroundColor: "var(--gold)", color: "#0A0A0A" }}
           >
             {(media.score / 10).toFixed(1)}
           </div>
         )}
       </div>
-      <p className="mt-2 text-xs text-muted-foreground truncate group-hover:text-foreground transition-colors">
+      <p className="mt-2 text-xs font-medium truncate group-hover:text-[var(--gold)] transition-colors duration-200">
         {media.title}
       </p>
       {media.year && (
