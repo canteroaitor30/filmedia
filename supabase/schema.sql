@@ -44,7 +44,7 @@ create index profiles_username_trgm on profiles using gin (username gin_trgm_ops
 create table invitation_codes (
   id uuid default gen_random_uuid() primary key,
   code text unique not null,
-  created_by uuid references profiles(id) on delete cascade not null,
+  created_by uuid references profiles(id) on delete set null,
   used_by uuid references profiles(id) on delete set null,
   used_at timestamptz,
   expires_at timestamptz not null,

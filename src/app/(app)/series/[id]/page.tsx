@@ -93,7 +93,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <Users size={15} style={{ color: "var(--gold)" }} />
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Reparto</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto py-2 px-2 scrollbar-hide">
             {credits.cast.slice(0, 20).map((p) => (
               <div key={p.id} className="flex-shrink-0 w-24 text-center">
                 <Link href={`/person/${p.id}`} className="block">

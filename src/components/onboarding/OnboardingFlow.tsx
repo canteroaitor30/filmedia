@@ -26,21 +26,34 @@ interface Props {
 
 function Stars({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hovered, setHovered] = useState(0);
+  const active = hovered || value;
+
+  function half(e: React.MouseEvent<HTMLButtonElement>, star: number) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return (e.clientX - rect.left) < rect.width / 2 ? star - 0.5 : star;
+  }
+
   return (
-    <div className="flex gap-0.5 justify-center">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(value === star ? 0 : star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          className="text-lg leading-none transition-transform hover:scale-110"
-          style={{ color: star <= (hovered || value) ? "var(--gold)" : "var(--border)" }}
-        >
-          ★
-        </button>
-      ))}
+    <div className="flex justify-center" style={{ gap: "1px" }}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fill = Math.min(Math.max(active - (star - 1), 0), 1);
+        return (
+          <button
+            key={star}
+            type="button"
+            onMouseMove={(e) => setHovered(half(e, star))}
+            onMouseLeave={() => setHovered(0)}
+            onClick={(e) => { const v = half(e, star); onChange(value === v ? 0 : v); }}
+            className="relative transition-transform hover:scale-110"
+            style={{ width: 18, height: 18, flexShrink: 0 }}
+          >
+            <span className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--border)" }}>★</span>
+            {fill > 0 && (
+              <span className="absolute inset-0 overflow-hidden flex items-center justify-center" style={{ width: fill >= 1 ? "100%" : "50%", color: "var(--gold)" }}>★</span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

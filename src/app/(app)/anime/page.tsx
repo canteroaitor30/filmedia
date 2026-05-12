@@ -28,7 +28,6 @@ export default async function AnimePage() {
     <div className="space-y-12">
       <div className="pb-2 border-b border-border/50">
         <h1 className="text-3xl font-bold tracking-tight">Anime</h1>
-        <p className="text-sm text-muted-foreground mt-1">Los mejores animes de todos los tiempos</p>
       </div>
       <Carousel title="Mejor valorados" items={topRated.media.map(toUnified)} />
       {ANIME_GENRES.slice(0, 4).map((genre, i) => (

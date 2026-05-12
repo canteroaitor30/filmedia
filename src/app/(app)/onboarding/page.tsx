@@ -6,7 +6,7 @@ import { OnboardingFlow, type OnboardingItem } from "@/components/onboarding/Onb
 
 const MOVIE_IDS = [278, 157336, 680, 98]; // Cadena perpetua, Interstellar, Pulp Fiction, Gladiator
 const SERIES_IDS = [1399, 2288, 1396, 1100]; // GoT, Prison Break, Breaking Bad, HIMYM
-const ANIME_IDS = [16498, 813, 120120, 105310]; // AoT, DBZ, Tokyo Revengers, Fire Force
+const ANIME_IDS = [16498, 5114, 1535, 21856]; // AoT, FMAB, Death Note, My Hero Academia
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
