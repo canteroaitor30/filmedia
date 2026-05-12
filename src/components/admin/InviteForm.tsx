@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { sendInvite } from "@/app/actions/invite";
 import { Send } from "lucide-react";
 
 export function InviteForm({ availableCodes }: { availableCodes: number }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -20,6 +22,7 @@ export function InviteForm({ availableCodes }: { availableCodes: number }) {
     } else {
       setStatus("ok");
       setEmail("");
+      router.refresh();
       setTimeout(() => setStatus("idle"), 3000);
     }
   }
