@@ -105,7 +105,6 @@ export function ReviewSection({ mediaType, externalId }: Props) {
         content: editorContent.trim(),
         hasSpoilers: editorHasSpoilers,
         privacy: editorPrivacy,
-        reviewId: ownReview?.id,
       });
       if (result.error) { console.error("saveReview:", result.error); return; }
       setEditing(false);

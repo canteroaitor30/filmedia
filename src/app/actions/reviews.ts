@@ -68,31 +68,22 @@ export async function upsertReview(opts: {
   content: string;
   hasSpoilers: boolean;
   privacy: string;
-  reviewId?: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autenticado" };
 
-  if (opts.reviewId) {
-    const { error } = await supabase.from("reviews").update({
-      content: opts.content,
-      has_spoilers: opts.hasSpoilers,
-      privacy: opts.privacy as any,
-      edited_at: new Date().toISOString(),
-    }).eq("id", opts.reviewId).eq("user_id", user.id);
-    if (error) return { error: error.message };
-  } else {
-    const { error } = await supabase.from("reviews").insert({
-      user_id: user.id,
-      media_type: opts.mediaType as any,
-      external_id: opts.externalId,
-      content: opts.content,
-      has_spoilers: opts.hasSpoilers,
-      privacy: opts.privacy as any,
-    });
-    if (error) return { error: error.message };
-  }
+  const { error } = await supabase.from("reviews").upsert({
+    user_id: user.id,
+    media_type: opts.mediaType as any,
+    external_id: opts.externalId,
+    content: opts.content,
+    has_spoilers: opts.hasSpoilers,
+    privacy: opts.privacy as any,
+    edited_at: new Date().toISOString(),
+  }, { onConflict: "user_id,media_type,external_id" });
+
+  if (error) { console.error("[upsertReview]", error.message); return { error: error.message }; }
   return {};
 }
 
