@@ -62,6 +62,76 @@ export async function getReviews(
   return { reviews, currentUserId: user?.id ?? null };
 }
 
+export async function upsertReview(opts: {
+  mediaType: string;
+  externalId: number;
+  content: string;
+  hasSpoilers: boolean;
+  privacy: string;
+  reviewId?: string;
+}): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado" };
+
+  if (opts.reviewId) {
+    const { error } = await supabase.from("reviews").update({
+      content: opts.content,
+      has_spoilers: opts.hasSpoilers,
+      privacy: opts.privacy as any,
+      edited_at: new Date().toISOString(),
+    }).eq("id", opts.reviewId).eq("user_id", user.id);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("reviews").insert({
+      user_id: user.id,
+      media_type: opts.mediaType as any,
+      external_id: opts.externalId,
+      content: opts.content,
+      has_spoilers: opts.hasSpoilers,
+      privacy: opts.privacy as any,
+    });
+    if (error) return { error: error.message };
+  }
+  return {};
+}
+
+export type CommentData = {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  username: string;
+  avatar_url: string | null;
+};
+
+export async function getReviewComments(reviewId: string): Promise<CommentData[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("review_comments")
+    .select("id, user_id, content, created_at, profiles(username, avatar_url)")
+    .eq("review_id", reviewId)
+    .order("created_at", { ascending: true });
+
+  return ((data as any[] | null) ?? []).map((c) => ({
+    id: c.id,
+    user_id: c.user_id,
+    content: c.content,
+    created_at: c.created_at,
+    username: c.profiles?.username ?? "Usuario",
+    avatar_url: c.profiles?.avatar_url ?? null,
+  }));
+}
+
+export async function deleteReview(reviewId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado" };
+  const { error } = await supabase.from("reviews").delete().eq("id", reviewId).eq("user_id", user.id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function toggleReviewLike(reviewId: string): Promise<{ liked: boolean }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

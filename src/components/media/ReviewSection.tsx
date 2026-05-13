@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { getReviews, toggleReviewLike, addReviewComment, deleteReviewComment } from "@/app/actions/reviews";
+import { getReviews, upsertReview, deleteReview, getReviewComments, toggleReviewLike, addReviewComment, deleteReviewComment } from "@/app/actions/reviews";
 import type { MediaType, PrivacyLevel } from "@/types/database";
 import { Heart, MessageCircle, AlertTriangle, PenLine, Globe, Users, Lock, X } from "lucide-react";
 import { GoldSelect } from "@/components/ui/GoldSelect";
@@ -78,8 +77,6 @@ export function ReviewSection({ mediaType, externalId }: Props) {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
 
-  const supabase = createClient();
-
   async function loadReviews() {
     try {
       const { reviews: enriched, currentUserId: uid } = await getReviews(mediaType, externalId);
@@ -100,28 +97,19 @@ export function ReviewSection({ mediaType, externalId }: Props) {
   const ownReview = reviews.find((r) => r.user_id === currentUserId) ?? null;
 
   async function saveReview() {
+    if (!editorContent.trim()) return;
     setSaving(true);
     try {
-      if (!editorContent.trim()) return;
-
-      if (ownReview) {
-        const { error } = await supabase.from("reviews").update({
-          content: editorContent.trim(),
-          has_spoilers: editorHasSpoilers,
-          privacy: editorPrivacy,
-          edited_at: new Date().toISOString(),
-        }).eq("id", ownReview.id);
-        if (error) return;
-      } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { error } = await supabase
-          .from("reviews")
-          .insert({ user_id: user.id, media_type: mediaType, external_id: externalId, content: editorContent.trim(), has_spoilers: editorHasSpoilers, privacy: editorPrivacy });
-        if (error) { console.error("Review insert error:", error); return; }
-      }
-      await loadReviews();
+      const result = await upsertReview({
+        mediaType, externalId,
+        content: editorContent.trim(),
+        hasSpoilers: editorHasSpoilers,
+        privacy: editorPrivacy,
+        reviewId: ownReview?.id,
+      });
+      if (result.error) { console.error("saveReview:", result.error); return; }
       setEditing(false);
+      loadReviews();
     } finally {
       setSaving(false);
     }
@@ -129,8 +117,8 @@ export function ReviewSection({ mediaType, externalId }: Props) {
 
   async function removeReview() {
     if (!ownReview) return;
-    const { error } = await supabase.from("reviews").delete().eq("id", ownReview.id);
-    if (!error) {
+    const result = await deleteReview(ownReview.id);
+    if (!result.error) {
       setReviews((prev) => prev.filter((r) => r.id !== ownReview.id));
       setEditorContent("");
       setEditorHasSpoilers(false);
@@ -158,17 +146,7 @@ export function ReviewSection({ mediaType, externalId }: Props) {
       return;
     }
     setExpandedComments((prev) => ({ ...prev, [reviewId]: { loaded: false, items: [], loading: true } }));
-    type RawComment = { id: string; user_id: string; content: string; created_at: string; profiles: { username: string; avatar_url: string | null } | null };
-    const { data: commentData } = await supabase
-      .from("review_comments")
-      .select("id, user_id, content, created_at, profiles(username, avatar_url)")
-      .eq("review_id", reviewId)
-      .order("created_at", { ascending: true });
-
-    const items: ReviewComment[] = ((commentData as unknown as RawComment[] | null) ?? []).map((c) => {
-      const p = c.profiles;
-      return { id: c.id, user_id: c.user_id, content: c.content, created_at: c.created_at, username: p?.username ?? "Usuario", avatar_url: p?.avatar_url ?? null };
-    });
+    const items = await getReviewComments(reviewId);
     setExpandedComments((prev) => ({ ...prev, [reviewId]: { loaded: true, items, loading: false } }));
   }
 
