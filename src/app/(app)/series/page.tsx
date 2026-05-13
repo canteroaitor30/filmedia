@@ -21,6 +21,7 @@ function toUnified(s: Awaited<ReturnType<typeof tmdbSeries.topRated>>["results"]
     year: s.first_air_date ? new Date(s.first_air_date).getFullYear() : null,
     score: s.vote_average ? s.vote_average * 10 : null,
     genres: [],
+    popularity: s.vote_count,
   };
 }
 

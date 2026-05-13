@@ -25,6 +25,7 @@ function toUnified(m: Awaited<ReturnType<typeof tmdbMovies.topRated>>["results"]
     year: m.release_date ? new Date(m.release_date).getFullYear() : null,
     score: m.vote_average ? m.vote_average * 10 : null,
     genres: [],
+    popularity: m.vote_count,
   };
 }
 

@@ -15,6 +15,7 @@ function toUnified(a: AnilistMedia): UnifiedMedia {
     year: a.startDate.year,
     score: a.averageScore,
     genres: a.genres,
+    popularity: a.popularity,
   };
 }
 

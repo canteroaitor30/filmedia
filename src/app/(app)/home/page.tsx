@@ -12,6 +12,7 @@ function toMovie(m: { id: number; title: string; original_title: string; overvie
     backdropUrl: null,
     year: m.release_date ? new Date(m.release_date).getFullYear() : null,
     score: m.vote_average ? m.vote_average * 10 : null, genres: [],
+    popularity: m.vote_count,
   };
 }
 
@@ -23,6 +24,7 @@ function toSeries(s: { id: number; name: string; original_name: string; overview
     backdropUrl: null,
     year: s.first_air_date ? new Date(s.first_air_date).getFullYear() : null,
     score: s.vote_average ? s.vote_average * 10 : null, genres: [],
+    popularity: s.vote_count,
   };
 }
 

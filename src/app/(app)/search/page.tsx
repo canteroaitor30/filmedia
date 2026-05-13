@@ -54,6 +54,7 @@ export default async function SearchPage({ searchParams }: Props) {
           backdropUrl: null,
           year: m.release_date ? new Date(m.release_date).getFullYear() : null,
           score: m.vote_average ? m.vote_average * 10 : null, genres: [],
+          popularity: m.vote_count,
         })))
       ).catch(() => {}),
 
@@ -66,6 +67,7 @@ export default async function SearchPage({ searchParams }: Props) {
           backdropUrl: null,
           year: s.first_air_date ? new Date(s.first_air_date).getFullYear() : null,
           score: s.vote_average ? s.vote_average * 10 : null, genres: [],
+          popularity: s.vote_count,
         })))
       ).catch(() => {}),
 
@@ -77,10 +79,12 @@ export default async function SearchPage({ searchParams }: Props) {
           overview: a.description, posterUrl: a.coverImage.large,
           backdropUrl: a.bannerImage,
           year: a.startDate.year, score: a.averageScore, genres: a.genres,
+          popularity: a.popularity,
         })))
       ).catch(() => {}),
   ]);
 
+  results.sort((a, b) => b.popularity - a.popularity);
   const users = usersRes.data ?? [];
   const typeLabels = { all: "Todo", movie: "Películas", series: "Series", anime: "Anime" };
   const deptLabels: Record<string, string> = { Acting: "Actor/Actriz", Directing: "Dirección", Writing: "Guión", Production: "Producción" };

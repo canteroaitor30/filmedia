@@ -11,4 +11,5 @@ export interface UnifiedMedia {
   year: number | null;
   score: number | null;
   genres: string[];
+  popularity: number;
 }
