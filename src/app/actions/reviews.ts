@@ -27,7 +27,7 @@ export async function getReviews(
 
   const { data: rawData, error: reviewsError } = await supabase
     .from("reviews")
-    .select("id, user_id, content, has_spoilers, privacy, created_at, edited_at, profiles(username, avatar_url, display_name)")
+    .select("id, user_id, content, has_spoilers, privacy, created_at, edited_at, profiles!user_id(username, avatar_url, display_name)")
     .eq("media_type", mediaType as any)
     .eq("external_id", externalId)
     .order("created_at", { ascending: false });
@@ -100,7 +100,7 @@ export async function getReviewComments(reviewId: string): Promise<CommentData[]
   const supabase = await createClient();
   const { data } = await supabase
     .from("review_comments")
-    .select("id, user_id, content, created_at, profiles(username, avatar_url)")
+    .select("id, user_id, content, created_at, profiles!user_id(username, avatar_url)")
     .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
 
