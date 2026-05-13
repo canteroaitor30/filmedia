@@ -81,16 +81,20 @@ export function ReviewSection({ mediaType, externalId }: Props) {
   const supabase = createClient();
 
   async function loadReviews() {
-    const { reviews: enriched, currentUserId: uid } = await getReviews(mediaType, externalId);
-    setCurrentUserId(uid);
-    setReviews(enriched.map((r) => ({ ...r, privacy: r.privacy as PrivacyLevel })));
-    const own = enriched.find((r) => r.user_id === uid);
-    if (own) { setEditorContent(own.content); setEditorHasSpoilers(own.has_spoilers); setEditorPrivacy(own.privacy as PrivacyLevel); }
-    setLoading(false);
+    try {
+      const { reviews: enriched, currentUserId: uid } = await getReviews(mediaType, externalId);
+      setCurrentUserId(uid);
+      setReviews(enriched.map((r) => ({ ...r, privacy: r.privacy as PrivacyLevel })));
+      const own = enriched.find((r) => r.user_id === uid);
+      if (own) { setEditorContent(own.content); setEditorHasSpoilers(own.has_spoilers); setEditorPrivacy(own.privacy as PrivacyLevel); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     loadReviews();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaType, externalId]);
 
   const ownReview = reviews.find((r) => r.user_id === currentUserId) ?? null;

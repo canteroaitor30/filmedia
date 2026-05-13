@@ -25,12 +25,14 @@ export async function getReviews(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: rawData } = await supabase
+  const { data: rawData, error: reviewsError } = await supabase
     .from("reviews")
     .select("id, user_id, content, has_spoilers, privacy, created_at, edited_at, profiles(username, avatar_url, display_name)")
     .eq("media_type", mediaType as any)
     .eq("external_id", externalId)
     .order("created_at", { ascending: false });
+
+  if (reviewsError) console.error("[getReviews] error:", reviewsError.message, "uid:", user?.id);
 
   const raw = (rawData as any[] | null) ?? [];
   if (!raw.length) return { reviews: [], currentUserId: user?.id ?? null };
