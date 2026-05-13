@@ -160,7 +160,7 @@ export function ReviewSection({ mediaType, externalId }: Props) {
         const { error } = await supabase
           .from("reviews")
           .insert({ user_id: user.id, media_type: mediaType, external_id: externalId, content: editorContent.trim(), has_spoilers: editorHasSpoilers, privacy: editorPrivacy });
-        if (error) return;
+        if (error) { console.error("Review insert error:", error); alert(error.message); return; }
         await loadReviews();
       }
       setEditing(false);
