@@ -138,6 +138,8 @@ export const tmdbPerson = {
     tmdb<TmdbPerson>(`/person/${id}`),
   combinedCredits: (id: number) =>
     tmdb<{ cast: TmdbPersonCredit[]; crew: TmdbPersonCredit[] }>(`/person/${id}/combined_credits`),
+  search: (query: string, page = 1) =>
+    tmdb<TmdbPage<TmdbPerson>>("/search/person", { query, page: String(page) }),
 };
 
 export function posterUrl(path: string | null, size: "w185" | "w342" | "w500" | "original" = "w342") {

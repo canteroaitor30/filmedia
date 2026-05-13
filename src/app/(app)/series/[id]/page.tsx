@@ -6,7 +6,8 @@ import { WatchButton } from "@/components/media/WatchButton";
 import { WatchlistButton } from "@/components/media/WatchlistButton";
 import { ReviewSection } from "@/components/media/ReviewSection";
 import { AddToListButton } from "@/components/lists/AddToListButton";
-import { Star, Calendar, Tv, Users } from "lucide-react";
+import { ScrollRow } from "@/components/ui/ScrollRow";
+import { Star, Calendar, Tv, Users, Film } from "lucide-react";
 
 export default async function SeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,10 +16,12 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
 
   const [series, credits] = await Promise.all([
     tmdbSeries.detail(seriesId).catch(() => null),
-    tmdbSeries.credits(seriesId).catch(() => ({ cast: [] })),
+    tmdbSeries.credits(seriesId).catch(() => ({ cast: [], crew: [] })),
   ]);
 
   if (!series) notFound();
+
+  const creator = credits.crew.find((c) => c.jobs?.some((j) => j.job === "Director" || j.job === "Creator" || j.job === "Series Director")) ?? null;
 
   const backdrop = backdropUrl(series.backdrop_path);
   const poster = posterUrl(series.poster_path, "w500");
@@ -71,6 +74,17 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             ))}
           </div>
 
+          {creator && (
+            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
+              <Film size={12} />
+              <span>Creación</span>
+              <span className="opacity-40">·</span>
+              <Link href={`/person/${creator.id}`} className="text-foreground hover:text-[var(--gold)] transition-colors font-medium">
+                {creator.name}
+              </Link>
+            </div>
+          )}
+
           {series.overview && (
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-2xl">{series.overview}</p>
           )}
@@ -93,7 +107,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <Users size={15} style={{ color: "var(--gold)" }} />
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Reparto</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto py-2 px-2 scrollbar-hide">
+          <ScrollRow>
             {credits.cast.slice(0, 20).map((p) => (
               <div key={p.id} className="flex-shrink-0 w-24 text-center">
                 <Link href={`/person/${p.id}`} className="block">
@@ -117,7 +131,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
                 <p className="text-xs text-muted-foreground truncate">{p.roles?.[0]?.character ?? ""}</p>
               </div>
             ))}
-          </div>
+          </ScrollRow>
         </div>
       )}
     </div>

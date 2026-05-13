@@ -6,7 +6,8 @@ import { WatchButton } from "@/components/media/WatchButton";
 import { WatchlistButton } from "@/components/media/WatchlistButton";
 import { ReviewSection } from "@/components/media/ReviewSection";
 import { AddToListButton } from "@/components/lists/AddToListButton";
-import { Star, Clock, Calendar, Users } from "lucide-react";
+import { ScrollRow } from "@/components/ui/ScrollRow";
+import { Star, Clock, Calendar, Users, Film } from "lucide-react";
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,10 +16,12 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
 
   const [movie, credits] = await Promise.all([
     tmdbMovies.detail(movieId).catch(() => null),
-    tmdbMovies.credits(movieId).catch(() => ({ cast: [] })),
+    tmdbMovies.credits(movieId).catch(() => ({ cast: [], crew: [] })),
   ]);
 
   if (!movie) notFound();
+
+  const director = credits.crew.find((c) => c.job === "Director") ?? null;
 
   const backdrop = backdropUrl(movie.backdrop_path);
   const poster = posterUrl(movie.poster_path, "w500");
@@ -75,6 +78,17 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             ))}
           </div>
 
+          {director && (
+            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
+              <Film size={12} />
+              <span>Dirección</span>
+              <span className="opacity-40">·</span>
+              <Link href={`/person/${director.id}`} className="text-foreground hover:text-[var(--gold)] transition-colors font-medium">
+                {director.name}
+              </Link>
+            </div>
+          )}
+
           {movie.overview && (
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-2xl">{movie.overview}</p>
           )}
@@ -97,7 +111,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             <Users size={15} style={{ color: "var(--gold)" }} />
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Reparto</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto py-2 px-2 scrollbar-hide">
+          <ScrollRow>
             {credits.cast.slice(0, 20).map((p) => (
               <div key={p.id} className="flex-shrink-0 w-24 text-center">
                 <Link href={`/person/${p.id}`} className="block">
@@ -121,7 +135,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
                 <p className="text-xs text-muted-foreground truncate">{p.character}</p>
               </div>
             ))}
-          </div>
+          </ScrollRow>
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { tmdbMovies, tmdbSeries, posterUrl } from "@/lib/tmdb/client";
+import { tmdbMovies, tmdbSeries, tmdbPerson, posterUrl } from "@/lib/tmdb/client";
 import { anilistAnime } from "@/lib/anilist/client";
 import { createClient } from "@/lib/supabase/server";
 import { MediaCard } from "@/components/media/MediaCard";
@@ -28,6 +28,7 @@ export default async function SearchPage({ searchParams }: Props) {
   }
 
   const results: UnifiedMedia[] = [];
+  const persons: { id: number; name: string; profile_path: string | null; known_for_department: string }[] = [];
   const supabase = await createClient();
 
   const [usersRes] = await Promise.all([
@@ -37,6 +38,12 @@ export default async function SearchPage({ searchParams }: Props) {
       .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
       .neq("username", "system")
       .limit(5),
+
+    tmdbPerson.search(q).then((r) =>
+      persons.push(...r.results.slice(0, 5).map((p) => ({
+        id: p.id, name: p.name, profile_path: p.profile_path, known_for_department: p.known_for_department,
+      })))
+    ).catch(() => {}),
 
     (type === "all" || type === "movie") &&
       tmdbMovies.search(q).then((r) =>
@@ -76,6 +83,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const users = usersRes.data ?? [];
   const typeLabels = { all: "Todo", movie: "Películas", series: "Series", anime: "Anime" };
+  const deptLabels: Record<string, string> = { Acting: "Actor/Actriz", Directing: "Dirección", Writing: "Guión", Production: "Producción" };
 
   return (
     <div className="space-y-6">
@@ -86,7 +94,7 @@ export default async function SearchPage({ searchParams }: Props) {
             Resultados para{" "}
             <span className="font-bold" style={{ color: "var(--gold)" }}>&ldquo;{q}&rdquo;</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{results.length + users.length} resultado{results.length + users.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{results.length + users.length + persons.length} resultado{results.length + users.length + persons.length !== 1 ? "s" : ""}</p>
         </div>
         <a
           href="/home"
@@ -124,6 +132,33 @@ export default async function SearchPage({ searchParams }: Props) {
         </div>
       )}
 
+      {/* Persons */}
+      {persons.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Personas</p>
+          <div className="flex flex-col gap-1">
+            {persons.map((p) => (
+              <Link
+                key={p.id}
+                href={`/person/${p.id}`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden ring-1 ring-white/10">
+                  {p.profile_path
+                    ? <img src={`https://image.tmdb.org/t/p/w185${p.profile_path}`} alt={p.name} className="w-full h-full object-cover" />
+                    : <User size={16} className="text-muted-foreground" />
+                  }
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">{deptLabels[p.known_for_department] ?? p.known_for_department}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Type filter pills */}
       <div className="flex gap-2 flex-wrap">
         {(["all", "movie", "series", "anime"] as const).map((t) => (
@@ -140,7 +175,7 @@ export default async function SearchPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {results.length === 0 && users.length === 0 ? (
+      {results.length === 0 && users.length === 0 && persons.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Search size={32} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium text-foreground">Sin resultados</p>
