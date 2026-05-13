@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getReviews, toggleReviewLike, addReviewComment, deleteReviewComment } from "@/app/actions/reviews";
 import type { MediaType, PrivacyLevel } from "@/types/database";
 import { Heart, MessageCircle, AlertTriangle, PenLine, Globe, Users, Lock, X } from "lucide-react";
+import { GoldSelect } from "@/components/ui/GoldSelect";
 
 interface ReviewComment {
   id: string;
@@ -227,15 +228,12 @@ export function ReviewSection({ mediaType, externalId }: Props) {
               <input type="checkbox" checked={editorHasSpoilers} onChange={(e) => setEditorHasSpoilers(e.target.checked)} className="accent-yellow-400 rounded" />
               <span className="text-muted-foreground text-xs">Contiene spoilers</span>
             </label>
-            <select
+            <GoldSelect
+              label="Privacidad"
               value={editorPrivacy}
-              onChange={(e) => setEditorPrivacy(e.target.value as PrivacyLevel)}
-              className="rounded-lg border border-border/60 bg-secondary/60 px-2.5 py-1.5 text-xs outline-none focus:border-[var(--gold)]/60 transition-colors"
-            >
-              {(["private", "followers", "public"] as PrivacyLevel[]).map((p) => (
-                <option key={p} value={p}>{PRIVACY_LABELS[p]}</option>
-              ))}
-            </select>
+              onChange={(v) => setEditorPrivacy(v as PrivacyLevel)}
+              options={(["private", "followers", "public"] as PrivacyLevel[]).map((p) => ({ value: p, label: PRIVACY_LABELS[p] }))}
+            />
           </div>
           <div className="flex gap-2">
             <button

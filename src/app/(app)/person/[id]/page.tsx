@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { TmdbPersonCredit } from "@/lib/tmdb/client";
 import { MapPin, Calendar, Film, Tv, Video } from "lucide-react";
+import { ScrollRow } from "@/components/ui/ScrollRow";
 
 function CreditCard({ credit }: { credit: TmdbPersonCredit }) {
   const isMovie = credit.media_type === "movie";
@@ -173,33 +174,33 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       {movieCast.length > 0 && (
         <section className="mb-10">
           <SectionHeader icon={<Film size={15} />} label="Películas" />
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+          <ScrollRow>
             {movieCast.map((c) => (
               <CreditCard key={c.id} credit={c} />
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
 
       {tvCast.length > 0 && (
         <section className="mb-10">
           <SectionHeader icon={<Tv size={15} />} label="Series" />
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+          <ScrollRow>
             {tvCast.map((c) => (
               <CreditCard key={c.id} credit={c} />
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
 
       {crewCredits.length > 0 && (
         <section className="mb-10">
           <SectionHeader icon={<Video size={15} />} label="Como director/creador" />
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+          <ScrollRow>
             {crewCredits.map((c) => (
               <CreditCard key={c.id} credit={c} />
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
     </div>
