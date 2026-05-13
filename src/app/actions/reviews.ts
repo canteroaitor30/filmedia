@@ -2,6 +2,64 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+export type ReviewData = {
+  id: string;
+  user_id: string;
+  content: string;
+  has_spoilers: boolean;
+  privacy: string;
+  created_at: string;
+  edited_at: string | null;
+  username: string;
+  avatar_url: string | null;
+  display_name: string | null;
+  likeCount: number;
+  likedByMe: boolean;
+  commentCount: number;
+};
+
+export async function getReviews(
+  mediaType: string,
+  externalId: number
+): Promise<{ reviews: ReviewData[]; currentUserId: string | null }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: rawData } = await supabase
+    .from("reviews")
+    .select("id, user_id, content, has_spoilers, privacy, created_at, edited_at, profiles(username, avatar_url, display_name)")
+    .eq("media_type", mediaType as any)
+    .eq("external_id", externalId)
+    .order("created_at", { ascending: false });
+
+  const raw = (rawData as any[] | null) ?? [];
+  if (!raw.length) return { reviews: [], currentUserId: user?.id ?? null };
+
+  const reviewIds = raw.map((r) => r.id);
+  const [likesRes, commentCountRes] = await Promise.all([
+    supabase.from("review_likes").select("review_id, user_id").in("review_id", reviewIds),
+    supabase.from("review_comments").select("review_id").in("review_id", reviewIds),
+  ]);
+
+  const likes = likesRes.data ?? [];
+  const commentRefs = commentCountRes.data ?? [];
+
+  const reviews: ReviewData[] = raw.map((r) => {
+    const p = r.profiles as { username: string; avatar_url: string | null; display_name: string | null } | null;
+    return {
+      id: r.id, user_id: r.user_id, content: r.content,
+      has_spoilers: r.has_spoilers, privacy: r.privacy,
+      created_at: r.created_at, edited_at: r.edited_at,
+      username: p?.username ?? "Usuario", avatar_url: p?.avatar_url ?? null, display_name: p?.display_name ?? null,
+      likeCount: likes.filter((l) => l.review_id === r.id).length,
+      likedByMe: user ? likes.some((l) => l.review_id === r.id && l.user_id === user.id) : false,
+      commentCount: commentRefs.filter((c) => c.review_id === r.id).length,
+    };
+  });
+
+  return { reviews, currentUserId: user?.id ?? null };
+}
+
 export async function toggleReviewLike(reviewId: string): Promise<{ liked: boolean }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

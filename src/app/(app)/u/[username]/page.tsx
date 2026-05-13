@@ -7,6 +7,7 @@ import { StatsTab } from "@/components/profile/StatsTab";
 import { EditProfileButton } from "@/components/profile/EditProfileButton";
 import { LogoutButton } from "@/components/profile/LogoutButton";
 import { InviteForm } from "@/components/admin/InviteForm";
+import { FollowDropdown } from "@/components/profile/FollowDropdown";
 import { Lock } from "lucide-react";
 
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
@@ -96,8 +97,8 @@ export default async function ProfilePage({
             <div className="flex gap-5 mt-3 text-sm">
               <span><strong className="font-bold tabular-nums">{watchedRes.count ?? 0}</strong> <span className="text-muted-foreground">vistos</span></span>
               <span><strong className="font-bold tabular-nums">{pendingRes.count ?? 0}</strong> <span className="text-muted-foreground">pendientes</span></span>
-              <span><strong className="font-bold tabular-nums">{followersRes.count ?? 0}</strong> <span className="text-muted-foreground">seguidores</span></span>
-              <span><strong className="font-bold tabular-nums">{followingRes.count ?? 0}</strong> <span className="text-muted-foreground">siguiendo</span></span>
+              <FollowDropdown userId={profile.id} count={followersRes.count ?? 0} type="followers" />
+              <FollowDropdown userId={profile.id} count={followingRes.count ?? 0} type="following" />
             </div>
           )}
         </div>

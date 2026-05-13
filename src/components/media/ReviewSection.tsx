@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { toggleReviewLike, addReviewComment, deleteReviewComment } from "@/app/actions/reviews";
+import { getReviews, toggleReviewLike, addReviewComment, deleteReviewComment } from "@/app/actions/reviews";
 import type { MediaType, PrivacyLevel } from "@/types/database";
 import { Heart, MessageCircle, AlertTriangle, PenLine, Globe, Users, Lock, X } from "lucide-react";
 
@@ -33,16 +33,6 @@ interface ReviewWithMeta {
 
 type CommentState = { loaded: boolean; items: ReviewComment[]; loading: boolean };
 
-type RawReview = {
-  id: string;
-  user_id: string;
-  content: string;
-  has_spoilers: boolean;
-  privacy: string;
-  created_at: string;
-  edited_at: string | null;
-  profiles: { username: string; avatar_url: string | null; display_name: string | null } | null;
-};
 
 const PRIVACY_LABELS: Record<PrivacyLevel, string> = {
   private: "Solo yo",
@@ -89,53 +79,17 @@ export function ReviewSection({ mediaType, externalId }: Props) {
 
   const supabase = createClient();
 
-  async function loadReviews(userId?: string | null) {
-    const uid = userId !== undefined ? userId : currentUserId;
-    const { data: rawReviewsData } = await supabase
-      .from("reviews")
-      .select("id, user_id, content, has_spoilers, privacy, created_at, edited_at, profiles(username, avatar_url, display_name)")
-      .eq("media_type", mediaType)
-      .eq("external_id", externalId)
-      .order("created_at", { ascending: false });
-
-    const rawReviews = (rawReviewsData as unknown as RawReview[] | null) ?? [];
-    if (!rawReviews.length) { setReviews([]); setLoading(false); return; }
-
-    const reviewIds = rawReviews.map((r) => r.id);
-    const [likesRes, commentCountRes] = await Promise.all([
-      supabase.from("review_likes").select("review_id, user_id").in("review_id", reviewIds),
-      supabase.from("review_comments").select("review_id").in("review_id", reviewIds),
-    ]);
-
-    const likes = likesRes.data ?? [];
-    const commentRefs = commentCountRes.data ?? [];
-
-    const enriched: ReviewWithMeta[] = rawReviews.map((r) => {
-      const p = r.profiles as { username: string; avatar_url: string | null; display_name: string | null } | null;
-      return {
-        id: r.id, user_id: r.user_id, content: r.content,
-        has_spoilers: r.has_spoilers, privacy: r.privacy as PrivacyLevel,
-        created_at: r.created_at, edited_at: r.edited_at,
-        username: p?.username ?? "Usuario", avatar_url: p?.avatar_url ?? null, display_name: p?.display_name ?? null,
-        likeCount: likes.filter((l) => l.review_id === r.id).length,
-        likedByMe: uid ? likes.some((l) => l.review_id === r.id && l.user_id === uid) : false,
-        commentCount: commentRefs.filter((c) => c.review_id === r.id).length,
-      };
-    });
-
-    setReviews(enriched);
+  async function loadReviews() {
+    const { reviews: enriched, currentUserId: uid } = await getReviews(mediaType, externalId);
+    setCurrentUserId(uid);
+    setReviews(enriched.map((r) => ({ ...r, privacy: r.privacy as PrivacyLevel })));
     const own = enriched.find((r) => r.user_id === uid);
-    if (own) { setEditorContent(own.content); setEditorHasSpoilers(own.has_spoilers); setEditorPrivacy(own.privacy); }
+    if (own) { setEditorContent(own.content); setEditorHasSpoilers(own.has_spoilers); setEditorPrivacy(own.privacy as PrivacyLevel); }
     setLoading(false);
   }
 
   useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id ?? null);
-      await loadReviews(user?.id ?? null);
-    }
-    init();
+    loadReviews();
   }, [mediaType, externalId]);
 
   const ownReview = reviews.find((r) => r.user_id === currentUserId) ?? null;
@@ -153,16 +107,15 @@ export function ReviewSection({ mediaType, externalId }: Props) {
           edited_at: new Date().toISOString(),
         }).eq("id", ownReview.id);
         if (error) return;
-        await loadReviews();
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { error } = await supabase
           .from("reviews")
           .insert({ user_id: user.id, media_type: mediaType, external_id: externalId, content: editorContent.trim(), has_spoilers: editorHasSpoilers, privacy: editorPrivacy });
-        if (error) { console.error("Review insert error:", error); alert(error.message); return; }
-        await loadReviews();
+        if (error) { console.error("Review insert error:", error); return; }
       }
+      await loadReviews();
       setEditing(false);
     } finally {
       setSaving(false);
